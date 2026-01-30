@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Command Center - INFOSTREAM</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .admin-nav-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            border: 1px solid var(--border);
+            overflow-x: auto;
+        }
+
+        .nav-tab {
+            padding: 12px 20px;
+            border-radius: 10px;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: 0.3s;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            border: 1px solid transparent;
+        }
+
+        .nav-tab:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+        }
+
+        .nav-tab.active {
+            background: var(--accent);
+            color: #000;
+            border-color: var(--accent);
+        }
+
+        .admin-section {
+            display: none;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .admin-section.active {
+            display: block;
+        }
+    </style>
+    <script>
+        function toggleDept(val) {
+            const deptFields = document.getElementById('deptFields');
+            if (val === 'department') {
+                deptFields.style.display = 'block';
+                deptFields.style.animation = 'fadeIn 0.3s ease-out';
+            } else {
+                deptFields.style.display = 'none';
+            }
+        }
+
+        function showSection(sectionId, element) {
+            // Hide all sections
+            document.querySelectorAll('.admin-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            // Show target section
+            document.getElementById(sectionId).classList.add('active');
+
+            // Update tab styling
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            element.classList.add('active');
+
+            // Store active tab
+            localStorage.setItem('activeAdminTab', sectionId);
+        }
+
+        window.onload = function () {
+            const lastTab = localStorage.getItem('activeAdminTab') || 'broadcast-section';
+            const tabElement = Array.from(document.querySelectorAll('.nav-tab')).find(tab => tab.getAttribute('onclick').includes(lastTab));
+            if (tabElement) {
+                showSection(lastTab, tabElement);
+            }
+        };
+    </script>
+</head>
+
+<body>
+    <div class="container" style="max-width: 1000px;">
+        <nav class="dashboard-nav"
+            style="background: var(--card-bg); backdrop-filter: var(--glass-blur); padding: 20px 30px; border-radius: 20px; border: 1px solid var(--border); margin-top: 20px;">
+            <div class="nav-logo" style="display: flex; align-items: center; gap: 12px;">
+                <div
+                    style="width: 32px; height: 32px; background: rgba(0, 242, 255, 0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--accent);">
+                    <i class="fas fa-signal" style="color: var(--accent); font-size: 14px;"></i>
+                </div>
+                <span style="font-weight: 800; letter-spacing: 1px;">INFOSTREAM <span
+                        style="font-size: 10px; background: var(--accent); color: #000; padding: 2px 8px; border-radius: 4px; margin-left: 8px;">{{
+                        session.get('role')|upper }}</span></span>
+            </div>
+            <a href="/logout" class="logout-link"
+                style="background: rgba(255, 68, 68, 0.1); padding: 8px 16px; border-radius: 12px; transition: 0.3s;">
+                <i class="fas fa-power-off"></i> TERMINATE
+            </a>
+        </nav>
+
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        {% for message in messages %}
+        <div
+            style="color: var(--accent); background: rgba(0, 242, 255, 0.1); padding: 15px; border-radius: 12px; margin-top: 20px; text-align: center; border: 1px solid rgba(0, 242, 255, 0.2); font-size: 13px; font-weight: 600;">
+            <i class="fas fa-check-circle" style="margin-right: 8px;"></i> {{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <div style="display: grid; grid-template-columns: 280px 1fr; gap: 30px; margin-top: 30px; align-items: start;">
+            <!-- Left Sidebar -->
+            <aside>
+                <div class="glass-card" style="padding: 20px;">
+                    <div
+                        style="font-size: 10px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px; padding-left: 10px;">
+                        Command Console</div>
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                        <button class="nav-tab active" onclick="showSection('broadcast-section', this)"
+                            style="width: 100%; justify-content: flex-start; border: 1px solid transparent; padding: 12px 15px;">
+                            <i class="fas fa-broadcast-tower" style="width: 20px;"></i> BROADCAST
+                        </button>
+                        <button class="nav-tab" onclick="showSection('placement-section', this)"
+                            style="width: 100%; justify-content: flex-start; border: 1px solid transparent; padding: 12px 15px;">
+                            <i class="fas fa-briefcase" style="width: 20px;"></i> PLACEMENTS
+                        </button>
+                        <button class="nav-tab" onclick="showSection('exam-section', this)"
+                            style="width: 100%; justify-content: flex-start; border: 1px solid transparent; padding: 12px 15px;">
+                            <i class="fas fa-file-invoice" style="width: 20px;"></i> EXAMS
+                        </button>
+                        {% if session.get('role') == 'admin' %}
+                        <button class="nav-tab" onclick="showSection('user-section', this)"
+                            style="width: 100%; justify-content: flex-start; border: 1px solid transparent; padding: 12px 15px;">
+                            <i class="fas fa-users-cog" style="width: 20px;"></i> USERS
+                        </button>
+                        {% endif %}
+                        <button class="nav-tab" onclick="showSection('log-section', this)"
+                            style="width: 100%; justify-content: flex-start; border: 1px solid transparent; padding: 12px 15px;">
+                            <i class="fas fa-history" style="width: 20px;"></i> TRANS. LOG
+                        </button>
+                    </div>
+                </div>
+
+                <div class="glass-card" style="padding: 20px; margin-top: 20px; background: rgba(0, 242, 255, 0.03);">
+                    <div
+                        style="font-size: 11px; font-weight: 800; color: var(--accent); margin-bottom: 15px; text-transform: uppercase;">
+                        System Authority</div>
+                    <div
+                        style="display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--text-muted);">
+                        <i class="fas fa-shield-alt" style="color: var(--accent);"></i> Level 4 Clearance
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Main Workspace -->
+            <main>
+                <div id="broadcast-section" class="admin-section active">
+                    <div class="glass-card" style="padding: 35px;">
+                        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 35px;">
+                            <div
+                                style="width: 48px; height: 48px; background: var(--accent); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #000;">
+                                <i class="fas fa-broadcast-tower" style="font-size: 20px;"></i>
+                            </div>
+                            <h3 style="font-size: 20px; font-weight: 800; letter-spacing: 1px;">INITIATE BROADCAST</h3>
+                        </div>
+
+                        <form method="post">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                                <div class="form-group">
+                                    <label class="form-label">Transmission Header</label>
+                                    <input name="title" placeholder="Enter broadcast title..." required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Category</label>
+                                    <select name="category" style="color: var(--accent); font-weight: 700;">
+                                        <option value="Events">Events</option>
+                                        <option value="Placement">Placement</option>
+                                        <option value="Exam Cell">Exam Cell</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Data Stream Content</label>
+                                <textarea name="content" rows="4" placeholder="Input detailed transmission data..."
+                                    required></textarea>
+                            </div>
+
+                            <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 25px;">
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label class="form-label">Distribution Protocol</label>
+                                    <select name="type" onchange="toggleDept(this.value)"
+                                        style="color: var(--accent); font-weight: 700;">
+                                        <option value="general">Global System Broadcast</option>
+                                        <option value="department">Sector Restricted (Dept/Phase)</option>
+                                    </select>
+                                </div>
+                                <label
+                                    style="display: flex; align-items: center; gap: 10px; color: #ff4d4d; font-weight: 800; font-size: 11px; cursor: pointer; background: rgba(255, 77, 77, 0.05); padding: 8px 15px; border-radius: 10px; border: 1px solid rgba(255, 77, 77, 0.2); margin-top: 15px;">
+                                    <input type="checkbox" name="is_urgent" value="1" style="width: auto; margin: 0;">
+                                    <i class="fas fa-exclamation-triangle"></i> MARK AS URGENT
+                                </label>
+                            </div>
+
+                            <div id="deptFields"
+                                style="display:none; background: rgba(255,255,255,0.02); padding: 25px; border-radius: 20px; margin-bottom: 25px; border: 1px solid var(--border);">
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label class="form-label">Target Sector(s)</label>
+                                        <div
+                                            style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+                                            <label
+                                                style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); cursor: pointer;">
+                                                <input type="checkbox" name="department" value="CSE"
+                                                    style="width: auto; margin: 0;"> CSE
+                                            </label>
+                                            <label
+                                                style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); cursor: pointer;">
+                                                <input type="checkbox" name="department" value="ECE"
+                                                    style="width: auto; margin: 0;"> ECE
+                                            </label>
+                                            <label
+                                                style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); cursor: pointer;">
+                                                <input type="checkbox" name="department" value="IT"
+                                                    style="width: auto; margin: 0;"> IT
+                                            </label>
+                                            <label
+                                                style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); cursor: pointer;">
+                                                <input type="checkbox" name="department" value="MECH"
+                                                    style="width: auto; margin: 0;"> MECH
+                                            </label>
+                                            <label
+                                                style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); cursor: pointer;">
+                                                <input type="checkbox" name="department" value="CIVIL"
+                                                    style="width: auto; margin: 0;"> CIVIL
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label class="form-label">Sector Phase(s)</label>
+                                        <div
+                                            style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+                                            <label
+                                                style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); cursor: pointer;">
+                                                <input type="checkbox" name="year" value="1"
+                                                    style="width: auto; margin: 0;"> Phase 1
+                                            </label>
+                                            <label
+                                                style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); cursor: pointer;">
+                                                <input type="checkbox" name="year" value="2"
+                                                    style="width: auto; margin: 0;"> Phase 2
+                                            </label>
+                                            <label
+                                                style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); cursor: pointer;">
+                                                <input type="checkbox" name="year" value="3"
+                                                    style="width: auto; margin: 0;"> Phase 3
+                                            </label>
+                                            <label
+                                                style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); cursor: pointer;">
+                                                <input type="checkbox" name="year" value="4"
+                                                    style="width: auto; margin: 0;"> Phase 4
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="submit-btn">
+                                <i class="fas fa-paper-plane"></i> EXECUTE TRANSMISSION
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <div id="placement-section" class="admin-section">
+                    <div class="glass-card" style="padding: 35px;">
+                        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 35px;">
+                            <div
+                                style="width: 48px; height: 48px; background: #adff00; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #000;">
+                                <i class="fas fa-briefcase" style="font-size: 20px;"></i>
+                            </div>
+                            <h3 style="font-size: 20px; font-weight: 800; letter-spacing: 1px;">PLACEMENT DISPATCH</h3>
+                        </div>
+
+                        <form action="/admin/placement" method="post">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                                <div class="form-group">
+                                    <label class="form-label">Corporate Entity</label>
+                                    <input name="company" placeholder="e.g. Nexus Dynamics" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Operational Role</label>
+                                    <input name="role" placeholder="e.g. Systems Architect" required>
+                                </div>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                                <div class="form-group">
+                                    <label class="form-label">Eligibility Parameters</label>
+                                    <input name="eligibility" placeholder="e.g. CGPA > 8.0" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Activation Deadline</label>
+                                    <input type="date" name="deadline" required>
+                                </div>
+                            </div>
+
+                            <div class="form-group"
+                                style="margin-bottom: 30px; display: flex; align-items: center; gap: 20px;">
+                                <div style="flex: 1;">
+                                    <label class="form-label">Detailed Intelligence</label>
+                                    <textarea name="description" rows="3" placeholder="Input recruitment parameters..."
+                                        required></textarea>
+                                </div>
+                                <label
+                                    style="display: flex; align-items: center; gap: 10px; color: #adff00; font-weight: 800; font-size: 11px; cursor: pointer; background: rgba(173, 255, 0, 0.05); padding: 12px 20px; border-radius: 12px; border: 1px solid rgba(173, 255, 0, 0.2); margin-top: 25px;">
+                                    <input type="checkbox" name="is_urgent" value="1" style="width: auto; margin: 0;">
+                                    <i class="fas fa-bolt"></i> URGENT DESPATCH
+                                </label>
+                            </div>
+
+                            <button type="submit" class="submit-btn"
+                                style="background: #adff00; box-shadow: 0 4px 15px rgba(173, 255, 0, 0.2);">
+                                <i class="fas fa-upload"></i> PUBLISH RECRUITMENT DATA
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <div id="exam-section" class="admin-section">
+                    <div class="glass-card" style="padding: 35px;">
+                        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 35px;">
+                            <div
+                                style="width: 48px; height: 48px; background: #ffbc00; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #000;">
+                                <i class="fas fa-file-invoice" style="font-size: 20px;"></i>
+                            </div>
+                            <h3 style="font-size: 20px; font-weight: 800; letter-spacing: 1px;">ASSESSMENT CENTER</h3>
+                        </div>
+
+                        <form action="/admin/exam" method="post">
+                            <div class="form-group">
+                                <label class="form-label">Assessment Classification</label>
+                                <select name="exam_type" style="color: #ffbc00; font-weight: 700;">
+                                    <option value="Internal Test">Internal Test Sequence</option>
+                                    <option value="University Exam">University Nexus Update</option>
+                                    <option value="Results">Result Publication</option>
+                                    <option value="Other">Special Assessment</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Update Header</label>
+                                <input name="title" placeholder="e.g. Semester 5 Main Examination" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Detailed Payload</label>
+                                <textarea name="content" rows="3" placeholder="Input examination parameters..."
+                                    required></textarea>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px;">
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label class="form-label">Target Sector(s)</label>
+                                    <div
+                                        style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+                                        <label
+                                            style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); cursor: pointer;">
+                                            <input type="checkbox" name="department" value="CSE"
+                                                style="width: auto; margin: 0;"> CSE
+                                        </label>
+                                        <label
+                                            style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); cursor: pointer;">
+                                            <input type="checkbox" name="department" value="ECE"
+                                                style="width: auto; margin: 0;"> ECE
+                                        </label>
+                                        <label
+                                            style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); cursor: pointer;">
+                                            <input type="checkbox" name="department" value="IT"
+                                                style="width: auto; margin: 0;"> IT
+                                        </label>
+                                        <label
+                                            style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); cursor: pointer;">
+                                            <input type="checkbox" name="department" value="MECH"
+                                                style="width: auto; margin: 0;"> MECH
+                                        </label>
+                                        <label
+                                            style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); cursor: pointer;">
+                                            <input type="checkbox" name="department" value="CIVIL"
+                                                style="width: auto; margin: 0;"> CIVIL
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label class="form-label">Target Phase(s)</label>
+                                    <div
+                                        style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+                                        <label
+                                            style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); cursor: pointer;">
+                                            <input type="checkbox" name="year" value="1"
+                                                style="width: auto; margin: 0;"> Phase 1
+                                        </label>
+                                        <label
+                                            style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); cursor: pointer;">
+                                            <input type="checkbox" name="year" value="2"
+                                                style="width: auto; margin: 0;"> Phase 2
+                                        </label>
+                                        <label
+                                            style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); cursor: pointer;">
+                                            <input type="checkbox" name="year" value="3"
+                                                style="width: auto; margin: 0;"> Phase 3
+                                        </label>
+                                        <label
+                                            style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); cursor: pointer;">
+                                            <input type="checkbox" name="year" value="4"
+                                                style="width: auto; margin: 0;"> Phase 4
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <label
+                                style="display: flex; align-items: center; gap: 10px; color: #ffbc00; font-weight: 800; font-size: 11px; cursor: pointer; background: rgba(255, 188, 0, 0.05); padding: 12px 20px; border-radius: 12px; border: 1px solid rgba(255, 188, 0, 0.2); margin-bottom: 30px; width: fit-content;">
+                                <input type="checkbox" name="is_urgent" value="1" style="width: auto; margin: 0;">
+                                <i class="fas fa-exclamation-circle"></i> HIGH PRIORITY ASSESSMENT
+                            </label>
+
+                            <button type="submit" class="submit-btn"
+                                style="background: transparent; border: 1px solid #ffbc00; color: #ffbc00; box-shadow: none;">
+                                <i class="fas fa-check-double"></i> AUTHORIZE ASSESSMENT
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                {% if session.get('role') == 'admin' %}
+                <div id="user-section" class="admin-section">
+                    <!-- Population Statistics -->
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px;">
+                        <div class="glass-card" style="padding: 20px; border-left: 4px solid var(--accent);">
+                            <div
+                                style="font-size: 10px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">
+                                Network Population</div>
+                            <div style="font-size: 24px; font-weight: 900; color: #fff;">{{ users|length }} <span
+                                    style="font-size: 12px; color: var(--text-muted); font-weight: 500;">Nodes</span>
+                            </div>
+                        </div>
+                        <div class="glass-card" style="padding: 20px; border-left: 4px solid #adff00;">
+                            <div
+                                style="font-size: 10px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">
+                                Authorized Staff</div>
+                            <div style="font-size: 24px; font-weight: 900; color: #fff;">
+                                {% set staff_count = [] %}
+                                {% for u in users %}{% if u.role == 'staff' %}{% set _ = staff_count.append(1) %}{%
+                                endif %}{% endfor %}
+                                {{ staff_count|length }}
+                                <span
+                                    style="font-size: 12px; color: var(--text-muted); font-weight: 500;">Entities</span>
+                            </div>
+                        </div>
+                        <div class="glass-card" style="padding: 20px; border-left: 4px solid #ffbc00;">
+                            <div
+                                style="font-size: 10px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">
+                                Registered Students</div>
+                            <div style="font-size: 24px; font-weight: 900; color: #fff;">
+                                {% set student_count = [] %}
+                                {% for u in users %}{% if u.role == 'student' %}{% set _ = student_count.append(1) %}{%
+                                endif %}{% endfor %}
+                                {{ student_count|length }}
+                                <span
+                                    style="font-size: 12px; color: var(--text-muted); font-weight: 500;">Identities</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 380px; gap: 30px;">
+                        <!-- User List -->
+                        <div class="glass-card" style="padding: 35px;">
+                            <div
+                                style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 35px; flex-wrap: wrap; gap: 20px;">
+                                <div style="display: flex; align-items: center; gap: 15px;">
+                                    <div
+                                        style="width: 42px; height: 42px; background: rgba(0, 242, 255, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--accent); border: 1px solid rgba(0, 242, 255, 0.2);">
+                                        <i class="fas fa-fingerprint" style="font-size: 20px;"></i>
+                                    </div>
+                                    <h3 style="font-size: 18px; font-weight: 800; letter-spacing: 1px;">CAMPUS NETWORK
+                                        ROSTER</h3>
+                                </div>
+                                <div style="position: relative; width: 300px;">
+                                    <i class="fas fa-search"
+                                        style="position: absolute; left: 15px; top: 14px; color: var(--text-muted); font-size: 12px;"></i>
+                                    <input type="text" id="userSearch" placeholder="Search identities..."
+                                        style="padding: 12px 15px 12px 42px; font-size: 13px; margin: 0; background: rgba(255,255,255,0.03); border: 1px solid var(--border);"
+                                        onkeyup="filterUsers()">
+                                </div>
+                            </div>
+
+                            <div style="max-height: 600px; overflow-y: auto; padding-right: 5px;">
+                                <table style="width: 100%; border-collapse: separate; border-spacing: 0 10px;">
+                                    <thead>
+                                        <tr style="text-align: left;">
+                                            <th
+                                                style="padding: 10px 15px; font-size: 10px; text-transform: uppercase; color: var(--text-muted); font-weight: 800; letter-spacing: 1px;">
+                                                Identity</th>
+                                            <th
+                                                style="padding: 10px 15px; font-size: 10px; text-transform: uppercase; color: var(--text-muted); font-weight: 800; letter-spacing: 1px;">
+                                                Access Protocol</th>
+                                            <th
+                                                style="padding: 10px 15px; font-size: 10px; text-transform: uppercase; color: var(--text-muted); font-weight: 800; letter-spacing: 1px;">
+                                                Sector Assignment</th>
+                                            <th
+                                                style="padding: 10px 15px; font-size: 10px; text-transform: uppercase; color: var(--text-muted); font-weight: 800; letter-spacing: 1px; text-align: right;">
+                                                System Control</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="userTableBody">
+                                        {% for u in users %}
+                                        <tr class="user-row"
+                                            style="background: rgba(255,255,255,0.02); border-radius: 12px; transition: 0.3s; border: 1px solid transparent;">
+                                            <td style="padding: 18px 15px;">
+                                                <div style="display: flex; align-items: center; gap: 15px;">
+                                                    <div
+                                                        style="width: 36px; height: 36px; background: rgba(255,255,255,0.03); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 14px; color: var(--text-muted); border: 1px solid var(--border);">
+                                                        <i class="fas fa-id-badge"></i>
+                                                    </div>
+                                                    <div>
+                                                        <div style="font-weight: 700; font-size: 15px; color: #fff;">{{
+                                                            u.username }}</div>
+                                                        <div
+                                                            style="display: flex; gap: 10px; align-items: center; margin-top: 2px;">
+                                                            <span style="font-size: 10px; color: var(--text-muted);">ID:
+                                                                #00{{ u.id }}</span>
+                                                            {% if u.phone %}
+                                                            <span
+                                                                style="font-size: 10px; color: var(--accent); opacity: 0.8;">
+                                                                <i class="fas fa-phone-alt"
+                                                                    style="font-size: 8px; margin-right: 3px;"></i> {{
+                                                                u.phone }}
+                                                            </span>
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td style="padding: 18px 15px;">
+                                                {% if u.role == 'admin' %}
+                                                <span
+                                                    style="background: rgba(0, 242, 255, 0.1); color: var(--accent); font-size: 9px; padding: 5px 12px; border-radius: 6px; font-weight: 900; letter-spacing: 1px; border: 1px solid rgba(0, 242, 255, 0.2);">SUPER
+                                                    USER</span>
+                                                {% elif u.role == 'staff' %}
+                                                <span
+                                                    style="background: rgba(173, 255, 0, 0.1); color: #adff00; font-size: 9px; padding: 5px 12px; border-radius: 6px; font-weight: 900; letter-spacing: 1px; border: 1px solid rgba(173, 255, 0, 0.2);">STAFF
+                                                    NODE</span>
+                                                {% else %}
+                                                <span
+                                                    style="background: rgba(255, 188, 0, 0.1); color: #ffbc00; font-size: 9px; padding: 5px 12px; border-radius: 6px; font-weight: 900; letter-spacing: 1px; border: 1px solid rgba(255, 188, 0, 0.2);">STUDENT</span>
+                                                {% endif %}
+                                            </td>
+                                            <td style="padding: 18px 15px;">
+                                                {% if u.department %}
+                                                <div style="display: flex; flex-direction: column; gap: 4px;">
+                                                    <span style="font-size: 12px; color: #fff; font-weight: 700;">{{
+                                                        u.department }}</span>
+                                                    <span style="font-size: 10px; color: var(--text-muted);">PHASE {{
+                                                        u.year }}</span>
+                                                </div>
+                                                {% else %}
+                                                <span
+                                                    style="font-size: 11px; color: #444; font-weight: 800; letter-spacing: 1px;">CORE
+                                                    ACCESS</span>
+                                                {% endif %}
+                                            </td>
+                                            <td style="padding: 18px 15px; text-align: right;">
+                                                {% if u.role != 'admin' %}
+                                                <button onclick="revokeIdentity({{ u.id }}, '{{ u.username }}')"
+                                                    style="background: rgba(255, 77, 77, 0.05); border: 1px solid rgba(255, 77, 77, 0.2); color: #ff4d4d; padding: 8px 16px; border-radius: 10px; font-size: 10px; font-weight: 900; cursor: pointer; transition: 0.3s; letter-spacing: 1px;">
+                                                    <i class="fas fa-shield-virus" style="margin-right: 5px;"></i>
+                                                    REVOKE
+                                                </button>
+                                                {% else %}
+                                                <div
+                                                    style="display: flex; align-items: center; justify-content: flex-end; gap: 8px; color: #444; font-weight: 800; font-size: 10px; letter-spacing: 1px;">
+                                                    <i class="fas fa-lock"></i> IMMUTABLE
+                                                </div>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Provisioning Control -->
+                        <div style="display: flex; flex-direction: column; gap: 30px;">
+                            <!-- Provision Staff -->
+                            <div class="glass-card" style="padding: 30px;">
+                                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 25px;">
+                                    <div
+                                        style="width: 36px; height: 36px; background: #adff00; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #000;">
+                                        <i class="fas fa-user-plus" style="font-size: 16px;"></i>
+                                    </div>
+                                    <h3 style="font-size: 16px; font-weight: 800;">PROVISION STAFF</h3>
+                                </div>
+                                <form action="/admin/add_staff" method="post">
+                                    <div class="form-group">
+                                        <label class="form-label">Identifier</label>
+                                        <input name="username" placeholder="Staff username..." required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">System Key</label>
+                                        <input type="password" name="password" placeholder="Access password..."
+                                            required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Mobile Hub (Phone)</label>
+                                        <input name="phone" placeholder="+91 00000 00000">
+                                    </div>
+                                    <button type="submit" class="submit-btn"
+                                        style="background: #adff00; color: #000; border: none; padding: 12px;">
+                                        AUTHORIZE STAFF
+                                    </button>
+                                </form>
+                            </div>
+
+                            <!-- Provision Student -->
+                            <div class="glass-card" style="padding: 30px;">
+                                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 25px;">
+                                    <div
+                                        style="width: 36px; height: 36px; background: #ffbc00; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #000;">
+                                        <i class="fas fa-graduation-cap" style="font-size: 16px;"></i>
+                                    </div>
+                                    <h3 style="font-size: 16px; font-weight: 800;">PROVISION STUDENT</h3>
+                                </div>
+                                <form action="/admin/add_student" method="post">
+                                    <div class="form-group">
+                                        <label class="form-label">Identifier</label>
+                                        <input name="username" placeholder="Student ID/Email..." required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">System Key</label>
+                                        <input type="password" name="password" placeholder="Access password..."
+                                            required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Mobile Hub (Phone)</label>
+                                        <input name="phone" placeholder="+91 00000 00000">
+                                    </div>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                        <div class="form-group">
+                                            <label class="form-label">Sector</label>
+                                            <select name="department" style="font-size: 12px;">
+                                                <option value="CSE">CSE</option>
+                                                <option value="ECE">ECE</option>
+                                                <option value="IT">IT</option>
+                                                <option value="MECH">MECH</option>
+                                                <option value="CIVIL">CIVIL</option>
+                                                <option value="AUTO">AUTO</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Phase</label>
+                                            <select name="year" style="font-size: 12px;">
+                                                <option value="1">1st Year</option>
+                                                <option value="2">2nd Year</option>
+                                                <option value="3">3rd Year</option>
+                                                <option value="4">4th Year</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="submit-btn"
+                                        style="background: #ffbc00; color: #000; border: none; padding: 12px;">
+                                        AUTHORIZE STUDENT
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <div id="log-section" class="admin-section">
+                    <div class="glass-card" style="padding: 30px;">
+                        <div
+                            style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 30px;">
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                <i class="fas fa-history" style="color: var(--accent); font-size: 20px;"></i>
+                                <h3 style="font-size: 18px; font-weight: 800; letter-spacing: 1px;">SYSTEM LOGS</h3>
+                            </div>
+                            <div style="position: relative; width: 250px;">
+                                <i class="fas fa-search"
+                                    style="position: absolute; left: 12px; top: 12px; color: var(--text-muted); font-size: 11px;"></i>
+                                <input type="text" id="logSearch" placeholder="Search history..."
+                                    style="padding: 10px 15px 10px 35px; font-size: 12px; margin-bottom: 0;"
+                                    onkeyup="filterLogs()">
+                            </div>
+                        </div>
+
+                        <div id="logsContainer" style="max-height: 600px; overflow-y: auto; padding-right: 10px;">
+                            {% set all_logs = [] %}
+                            {% for n in notifications %}
+                            {% set _ = all_logs.append({'type': 'Broadcast', 'title': n.title, 'content': n.content,
+                            'date': n.created_at, 'color_class': 'text-accent'}) %}
+                            {% endfor %}
+                            {% for p in placements %}
+                            {% set _ = all_logs.append({'type': 'Placement', 'title': p.company, 'content': p.role,
+                            'date': p.created_at, 'color_class': 'text-secondary'}) %}
+                            {% endfor %}
+                            {% for e in exams %}
+                            {% set _ = all_logs.append({'type': 'Exam', 'title': e.title, 'content': e.exam_type,
+                            'date': e.created_at, 'color_class': 'text-warning'}) %}
+                            {% endfor %}
+
+                            {% for log in all_logs|sort(attribute='date', reverse=True) %}
+                            <div class="log-entry"
+                                style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); padding: 15px; border-radius: 12px; margin-bottom: 10px; transition: 0.3s;">
+                                <div
+                                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                    <span class="{{ log.color_class }}"
+                                        style="font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; background: rgba(255,255,255,0.03); padding: 2px 6px; border-radius: 4px;">{{
+                                        log.type }}</span>
+                                    <span style="font-size: 10px; color: var(--text-muted);">{{ log.date }}</span>
+                                </div>
+                                <div style="font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 4px;">{{
+                                    log.title }}</div>
+                                <div style="font-size: 12px; color: var(--text-muted); line-height: 1.4;">{{
+                                    log.content|truncate(120) }}</div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        function revokeIdentity(id, username) {
+            if (confirm(`CRITICAL: Are you sure you want to revoke system access for "${username}"? This action is irreversible.`)) {
+                window.location.href = `/admin/delete_user/${id}`;
+            }
+        }
+
+        function toggleDept(val) {
+            const deptFields = document.getElementById('deptFields');
+            if (val === 'department') {
+                deptFields.style.display = 'block';
+                deptFields.style.animation = 'fadeIn 0.3s ease-out';
+            } else {
+                deptFields.style.display = 'none';
+            }
+        }
+
+        function showSection(sectionId, element) {
+            document.querySelectorAll('.admin-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            document.getElementById(sectionId).classList.add('active');
+
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+                tab.style.border = '1px solid transparent';
+                tab.style.color = 'var(--text-muted)';
+            });
+            element.classList.add('active');
+            element.style.borderColor = 'var(--border)';
+            element.style.color = '#fff';
+
+            localStorage.setItem('activeAdminTab', sectionId);
+        }
+
+        function filterLogs() {
+            const query = document.getElementById('logSearch').value.toLowerCase();
+            const entries = document.querySelectorAll('.log-entry');
+
+            entries.forEach(entry => {
+                const text = entry.innerText.toLowerCase();
+                if (text.includes(query)) {
+                    entry.style.display = 'block';
+                } else {
+                    entry.style.display = 'none';
+                }
+            });
+        }
+
+        function filterUsers() {
+            const query = document.getElementById('userSearch').value.toLowerCase();
+            const rows = document.querySelectorAll('.user-row');
+
+            rows.forEach(row => {
+                const text = row.innerText.toLowerCase();
+                if (text.includes(query)) {
+                    row.style.display = '';
+                    row.style.animation = 'fadeIn 0.3s ease-out';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        window.onload = function () {
+            const lastTab = localStorage.getItem('activeAdminTab') || 'broadcast-section';
+            const navTabs = document.querySelectorAll('.nav-tab');
+            let tabElement = null;
+
+            navTabs.forEach(tab => {
+                if (tab.getAttribute('onclick') && tab.getAttribute('onclick').includes(lastTab)) {
+                    tabElement = tab;
+                }
+            });
+
+            if (tabElement) {
+                showSection(lastTab, tabElement);
+            }
+        };
+    </script>
+</body>
+
+</html>

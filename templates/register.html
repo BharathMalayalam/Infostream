@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESTABLISH IDENTITY - INFOSTREAM</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script>
+        function toggleFields(role) {
+            const studentFields = document.getElementById('studentFields');
+            if (role === 'student') {
+                studentFields.style.display = 'block';
+                studentFields.style.animation = 'fadeIn 0.3s ease-out';
+            } else {
+                studentFields.style.display = 'none';
+            }
+        }
+    </script>
+</head>
+
+<body>
+    <div class="container" style="max-width: 500px;">
+        <div class="glass-card">
+            <div style="text-align: center; margin-bottom: 30px;">
+                <h2 style="font-size: 24px; font-weight: 800; letter-spacing: 1px; margin-bottom: 8px;">ESTABLISH
+                    IDENTITY</h2>
+                <p
+                    style="color: var(--accent); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 3px;">
+                    Initialize New Ecosystem Node</p>
+            </div>
+
+            {% with messages = get_flashed_messages() %}
+            {% if messages %}
+            {% for message in messages %}
+            <div
+                style="color: #ff4d4d; background: rgba(255, 77, 77, 0.1); padding: 12px; border-radius: 12px; margin-bottom: 20px; text-align: center; font-size: 13px; font-weight: 600; border: 1px solid rgba(255, 77, 77, 0.2);">
+                <i class="fas fa-exclamation-circle" style="margin-right: 8px;"></i> {{ message }}
+            </div>
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
+
+            <form method="post">
+                <div class="form-group">
+                    <label class="form-label">Username</label>
+                    <input name="username" placeholder="Choose a unique identifier" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Access Protocol (Password)</label>
+                    <input type="password" name="password" placeholder="Create a secure key" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Contact Node (Phone Number)</label>
+                    <input name="phone" placeholder="e.g. +91 98765 43210" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Account Classification</label>
+                    <select name="role" onchange="toggleFields(this.value)"
+                        style="color: var(--accent); font-weight: 700;">
+                        <option value="student">Student Node</option>
+                    </select>
+                </div>
+
+                <div id="studentFields"
+                    style="background: rgba(255, 255, 255, 0.02); padding: 25px; border-radius: 20px; margin-bottom: 30px; border: 1px solid var(--border);">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label">Department</label>
+                            <select name="department">
+                                <option value="CSE">CSE</option>
+                                <option value="ECE">ECE</option>
+                                <option value="IT">IT</option>
+                                <option value="MECH">MECH</option>
+                                <option value="CIVIL">CIVIL</option>
+                                <option value="AUTO">AUTO</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label">Phase (Year)</label>
+                            <select name="year">
+                                <option value="1">Phase 1</option>
+                                <option value="2">Phase 2</option>
+                                <option value="3">Phase 3</option>
+                                <option value="4">Phase 4</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-btn">
+                    <i class="fas fa-user-plus"></i> INITIALIZE NODE
+                </button>
+            </form>
+
+            <div style="text-align: center; margin-top: 30px; border-top: 1px solid var(--border); padding-top: 20px;">
+                <p style="color: var(--text-muted); font-size: 13px;">Already have an identity?
+                    <a href="/login" class="logout-link" style="display: inline; color: var(--accent);">Access
+                        Gateway</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

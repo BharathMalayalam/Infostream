@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>INFOSTREAM GATEWAY - Secure Login</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+
+<body>
+    <div class="container" style="max-width: 450px;">
+        <div class="glass-card">
+            <!-- Logo Section -->
+            <div style="text-align: center; margin-bottom: 40px;">
+                <div
+                    style="display: inline-flex; align-items: center; justify-content: center; width: 64px; height: 64px; background: rgba(0, 242, 255, 0.1); border-radius: 16px; border: 1px solid var(--accent); margin-bottom: 20px;">
+                    <i class="fas fa-signal" style="font-size: 24px; color: var(--accent);"></i>
+                </div>
+                <h1 class="logo-text" style="font-size: 24px; letter-spacing: 2px;">GATEWAY LOGIN</h1>
+                <p class="sub-logo" style="color: var(--accent); margin-bottom: 0;">Access Institutional Intelligence
+                </p>
+            </div>
+
+            {% with messages = get_flashed_messages() %}
+            {% if messages %}
+            {% for message in messages %}
+            <div
+                style="color: #ff4d4d; background: rgba(255, 77, 77, 0.1); padding: 12px; border-radius: 12px; margin-bottom: 20px; text-align: center; font-size: 13px; font-weight: 600; border: 1px solid rgba(255, 77, 77, 0.2);">
+                <i class="fas fa-exclamation-circle" style="margin-right: 8px;"></i> {{ message }}
+            </div>
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
+
+            <!-- Role Selector -->
+            <div class="role-toggle" style="margin-bottom: 30px;">
+                <button type="button" class="role-btn active" data-role="student" onclick="setRole('student')">
+                    <i class="fas fa-user-graduate"></i> STUDENT
+                </button>
+                <button type="button" class="role-btn" data-role="staff" onclick="setRole('staff')">
+                    <i class="fas fa-user-tie"></i> STAFF
+                </button>
+                <button type="button" class="role-btn" data-role="admin" onclick="setRole('admin')">
+                    <i class="fas fa-user-shield"></i> ADMIN
+                </button>
+            </div>
+
+            <form method="post" id="loginForm">
+                <input type="hidden" name="role" id="selectedRole" value="student">
+
+                <div class="form-group">
+                    <label class="form-label">Identity Identifier</label>
+                    <input type="text" name="username" placeholder="Username" required>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 30px;">
+                    <label class="form-label">Access Protocol</label>
+                    <input type="password" name="password" placeholder="••••••••" required>
+                </div>
+
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    ESTABLISH CONNECTION <i class="fas fa-arrow-right"></i>
+                </button>
+            </form>
+
+            <div style="text-align: center; margin-top: 30px; border-top: 1px solid var(--border); padding-top: 20px;">
+                <p style="color: var(--text-muted); font-size: 13px;">New node?
+                    <a href="/register" class="logout-link" style="display: inline; color: var(--accent);">Initialize
+                        Identity</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function setRole(role) {
+            document.getElementById('selectedRole').value = role;
+            const buttons = document.querySelectorAll('.role-btn');
+            buttons.forEach(btn => {
+                if (btn.getAttribute('data-role') === role) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+
+            const submitBtn = document.getElementById('submitBtn');
+            if (role === 'admin') {
+                submitBtn.innerHTML = 'AUTHORIZE ADMIN <i class="fas fa-shield-alt"></i>';
+                submitBtn.style.background = 'var(--accent-secondary)';
+                submitBtn.style.boxShadow = '0 4px 15px rgba(173, 255, 0, 0.2)';
+            } else if (role === 'staff') {
+                submitBtn.innerHTML = 'AUTHENTICATE STAFF <i class="fas fa-user-tie"></i>';
+                submitBtn.style.background = '#adff00';
+                submitBtn.style.boxShadow = '0 4px 15px rgba(173, 255, 0, 0.2)';
+            } else {
+                submitBtn.innerHTML = 'ESTABLISH CONNECTION <i class="fas fa-arrow-right"></i>';
+                submitBtn.style.background = 'var(--accent)';
+                submitBtn.style.boxShadow = '0 4px 15px rgba(0, 242, 255, 0.2)';
+            }
+        }
+    </script>
+</body>
+
+</html>

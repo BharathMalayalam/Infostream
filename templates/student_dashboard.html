@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Terminal - INFOSTREAM</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+
+<body>
+    <div class="container" style="max-width: 1000px;">
+        <nav class="dashboard-nav"
+            style="background: var(--card-bg); backdrop-filter: var(--glass-blur); padding: 20px 30px; border-radius: 20px; border: 1px solid var(--border); margin-top: 20px;">
+            <div class="nav-logo" style="display: flex; align-items: center; gap: 12px;">
+                <div
+                    style="width: 32px; height: 32px; background: rgba(0, 242, 255, 0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--accent);">
+                    <i class="fas fa-signal" style="color: var(--accent); font-size: 14px;"></i>
+                </div>
+                <span style="font-weight: 800; letter-spacing: 1px;">INFOSTREAM</span>
+            </div>
+            <a href="/logout" class="logout-link"
+                style="background: rgba(255, 68, 68, 0.1); padding: 8px 16px; border-radius: 12px; transition: 0.3s;">
+                <i class="fas fa-power-off"></i> TERMINATE
+            </a>
+        </nav>
+
+        <div style="display: grid; grid-template-columns: 300px 1fr; gap: 30px; margin-top: 30px; align-items: start;">
+            <!-- Left Sidebar -->
+            <aside>
+                <div class="glass-card" style="padding: 25px; margin-bottom: 25px;">
+                    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 25px;">
+                        <div
+                            style="width: 48px; height: 48px; background: var(--accent); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #000;">
+                            <i class="fas fa-user-graduate" style="font-size: 20px;"></i>
+                        </div>
+                        <div>
+                            <div
+                                style="font-size: 10px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">
+                                Authenticated Node</div>
+                            <div style="font-weight: 700; font-size: 15px;">{{ session.get('department') }} | Year {{
+                                session.get('year') }}</div>
+                        </div>
+                    </div>
+
+                    <div style="border-top: 1px solid var(--border); padding-top: 20px;">
+                        <div class="form-group" style="margin-bottom: 20px;">
+                            <div style="position: relative;">
+                                <i class="fas fa-search"
+                                    style="position: absolute; left: 15px; top: 15px; color: var(--text-muted); font-size: 12px;"></i>
+                                <input type="text" id="dashboardSearch" placeholder="Filter transmissions..."
+                                    style="padding-left: 42px; font-size: 13px;" onkeyup="filterContent()">
+                            </div>
+                        </div>
+
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <button class="nav-tab active" onclick="setFilter('type', 'all', this)"
+                                style="width: 100%; justify-content: flex-start; background: transparent; border: 1px solid transparent; color: var(--text-muted); padding: 12px 15px;">
+                                <i class="fas fa-th-large" style="width: 20px;"></i> ALL STREAMS
+                            </button>
+
+                            <div
+                                style="font-size: 10px; font-weight: 800; color: var(--text-muted); margin: 15px 0 10px 15px; text-transform: uppercase;">
+                                Category</div>
+                            <button class="nav-tab" onclick="setFilter('category', 'Exam Cell', this)"
+                                style="width: 100%; justify-content: flex-start; background: transparent; border: 1px solid transparent; color: var(--text-muted); padding: 10px 15px;">
+                                <i class="fas fa-file-invoice" style="width: 20px;"></i> EXAM CELL
+                            </button>
+                            <button class="nav-tab" onclick="setFilter('category', 'Placement', this)"
+                                style="width: 100%; justify-content: flex-start; background: transparent; border: 1px solid transparent; color: var(--text-muted); padding: 10px 15px;">
+                                <i class="fas fa-briefcase" style="width: 20px;"></i> PLACEMENTS
+                            </button>
+                            <button class="nav-tab" onclick="setFilter('category', 'Events', this)"
+                                style="width: 100%; justify-content: flex-start; background: transparent; border: 1px solid transparent; color: var(--text-muted); padding: 10px 15px;">
+                                <i class="fas fa-calendar-alt" style="width: 20px;"></i> EVENTS
+                            </button>
+
+                            <div
+                                style="font-size: 10px; font-weight: 800; color: var(--text-muted); margin: 15px 0 10px 15px; text-transform: uppercase;">
+                                Timeline</div>
+                            <button class="nav-tab" onclick="setFilter('date', 'today', this)"
+                                style="width: 100%; justify-content: flex-start; background: transparent; border: 1px solid transparent; color: var(--text-muted); padding: 10px 15px;">
+                                <i class="fas fa-clock" style="width: 20px;"></i> TODAY
+                            </button>
+                            <button class="nav-tab" onclick="setFilter('date', 'yesterday', this)"
+                                style="width: 100%; justify-content: flex-start; background: transparent; border: 1px solid transparent; color: var(--text-muted); padding: 10px 15px;">
+                                <i class="fas fa-history" style="width: 20px;"></i> YESTERDAY
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card" style="padding: 20px; background: rgba(0, 242, 255, 0.03);">
+                    <div
+                        style="font-size: 11px; font-weight: 800; color: var(--accent); margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px;">
+                        System Status</div>
+                    <div
+                        style="display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--text-muted);">
+                        <div
+                            style="width: 8px; height: 8px; background: #adff00; border-radius: 50%; box-shadow: 0 0 8px #adff00;">
+                        </div>
+                        Operational & Encrypted
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Main Content -->
+            <main id="notifications-list" style="padding-bottom: 60px;">
+                <!-- Urgent Alert Banner -->
+                <div id="urgent-alert-container"></div>
+
+                {% if streams %}
+                {% for s in streams %}
+                <div class="notification-card glass-card {% if s.is_urgent %}urgent-card{% endif %}"
+                    data-type="{{ s.type }}" data-category="{{ s.category }}" data-date="{{ s.created_at }}"
+                    style="padding: 30px; margin-bottom: 20px;">
+
+                    {% if s.is_urgent %}
+                    <div class="urgent-bg"
+                        style="position: absolute; top: 0; right: 0; color: #fff; font-size: 8px; font-weight: 900; padding: 4px 12px; border-bottom-left-radius: 12px; letter-spacing: 1px;">
+                        <i class="fas fa-bolt"></i> PRIORITY TRANSMISSION
+                    </div>
+                    {% endif %}
+
+                    <div class="notification-header">
+                        <div>
+                            <span class="urgent-text"
+                                style="font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">
+                                {{ s.category if s.category else s.type|upper }} Intelligence
+                            </span>
+                            <h3 class="notification-title {% if s.is_urgent %}urgent-title{% endif %}"
+                                style="margin-top: 5px;">
+                                {{ s.title if s.title else s.company }}
+                            </h3>
+                        </div>
+                        <span class="badge"
+                            style="background: rgba(255,255,255,0.05); color: var(--text-muted); border: 1px solid var(--border);">
+                            {{ 'FLASH' if not s.department else 'TARGETED' }}
+                        </span>
+                    </div>
+
+                    {% if s.type == 'placement' %}
+                    <div
+                        style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0; background: rgba(255,255,255,0.02); padding: 20px; border-radius: 16px;">
+                        <div>
+                            <div
+                                style="font-size: 9px; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">
+                                Designation</div>
+                            <div style="font-size: 14px; font-weight: 600; color: #fff;">{{ s.role }}</div>
+                        </div>
+                        <div>
+                            <div
+                                style="font-size: 9px; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">
+                                Deadline</div>
+                            <div style="font-size: 14px; font-weight: 700; color: #ffbc00;">{{ s.deadline }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <p class="notification-content" style="margin: 20px 0; font-size: 15px;">{{ s.content or
+                        s.description }}</p>
+
+                    <div class="notification-meta" style="padding-top: 15px; border-top: 1px solid var(--border);">
+                        <span><i class="far fa-clock"></i> {{ s.created_at }}</span>
+                        {% if s.type == 'placement' %}
+                        <span style="color: #adff00;"><i class="fas fa-shield-alt"></i> ELIGIBILITY: {{ s.eligibility
+                            }}</span>
+                        {% else %}
+                        <span style="color: var(--accent);"><i class="fas fa-check-circle"></i> VERIFIED NODE</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <!-- Empty state... -->
+                <div class="glass-card" style="text-align: center; padding: 100px 40px;">
+                    <i class="fas fa-satellite-dish"
+                        style="font-size: 32px; color: var(--text-muted); margin-bottom: 20px;"></i>
+                    <h3 style="font-size: 18px; font-weight: 700;">End of Stream</h3>
+                    <p style="color: var(--text-muted);">No active transmissions detected.</p>
+                </div>
+                {% endif %}
+            </main>
+        </div>
+    </div>
+
+    <script>
+        let currentFilters = {
+            type: 'all',
+            category: 'all',
+            date: 'all'
+        };
+
+        function setFilter(key, value, btn) {
+            // Update active state in UI
+            const siblings = btn.parentElement.querySelectorAll('.nav-tab');
+            siblings.forEach(b => {
+                b.classList.remove('active');
+                b.style.background = 'transparent';
+                b.style.color = 'var(--text-muted)';
+                b.style.borderColor = 'transparent';
+            });
+            btn.classList.add('active');
+            btn.style.background = 'rgba(255, 255, 255, 0.05)';
+            btn.style.color = '#fff';
+            btn.style.borderColor = 'var(--border)';
+
+            // Reset other filters if "ALL STREAMS" is clicked
+            if (key === 'type' && value === 'all') {
+                currentFilters = { type: 'all', category: 'all', date: 'all' };
+                document.querySelectorAll('.nav-tab').forEach(b => {
+                    if (!b.innerText.includes('ALL STREAMS')) {
+                        b.classList.remove('active');
+                        b.style.background = 'transparent';
+                        b.style.color = 'var(--text-muted)';
+                        b.style.borderColor = 'transparent';
+                    }
+                });
+            } else {
+                currentFilters[key] = value;
+            }
+
+            filterContent();
+        }
+
+        function filterContent() {
+            const query = document.getElementById('dashboardSearch').value.toLowerCase();
+            const cards = document.querySelectorAll('.notification-card');
+            const today = new Date().toISOString().split('T')[0];
+            const yesterdayDate = new Date();
+            yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+            const yesterday = yesterdayDate.toISOString().split('T')[0];
+
+            cards.forEach(card => {
+                const type = card.getAttribute('data-type');
+                const cat = card.getAttribute('data-category');
+                const dateStr = card.getAttribute('data-date').split(' ')[0];
+                const text = card.innerText.toLowerCase();
+
+                const matchesSearch = text.includes(query);
+                const matchesType = currentFilters.type === 'all' || type === currentFilters.type;
+                const matchesCategory = currentFilters.category === 'all' || cat === currentFilters.category;
+
+                let matchesDate = true;
+                if (currentFilters.date === 'today') matchesDate = dateStr === today;
+                if (currentFilters.date === 'yesterday') matchesDate = dateStr === yesterday;
+
+                if (matchesSearch && matchesType && matchesCategory && matchesDate) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            checkUrgentAlerts();
+        }
+
+        function checkUrgentAlerts() {
+            const urgentCards = document.querySelectorAll('.urgent-card');
+            const container = document.getElementById('urgent-alert-container');
+            container.innerHTML = '';
+
+            let urgentVisible = false;
+            urgentCards.forEach(card => {
+                if (card.style.display !== 'none') urgentVisible = true;
+            });
+
+            if (urgentVisible) {
+                const alert = document.createElement('div');
+                alert.style.cssText = `
+                    background: rgba(255, 77, 77, 0.1);
+                    border: 1px solid rgba(255, 77, 77, 0.2);
+                    padding: 20px;
+                    border-radius: 16px;
+                    margin-bottom: 25px;
+                    display: flex;
+                    align-items: center;
+                    gap: 15px;
+                    animation: pulse 2s infinite;
+                `;
+                alert.innerHTML = `
+                    <div style="width: 40px; height: 40px; background: #ff4d4d; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; box-shadow: 0 0 15px rgba(255, 77, 77, 0.4);">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div>
+                        <div style="color: #ff4d4d; font-weight: 800; font-size: 12px; letter-spacing: 1px;">CRITICAL BROADCAST DETECTED</div>
+                        <div style="color: var(--text-muted); font-size: 13px;">Immediate action/review required for urgent transmissions in your stream.</div>
+                    </div>
+                `;
+                container.appendChild(alert);
+            }
+        }
+
+        // Real-time Urgent Intelligence Poller
+        let lastUrgentCheck = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+        async function pollUrgentAlerts() {
+            try {
+                const response = await fetch(`/api/urgent_check?since=${encodeURIComponent(lastUrgentCheck)}`);
+                const data = await response.json();
+
+                if (data.urgent_alerts && data.urgent_alerts.length > 0) {
+                    data.urgent_alerts.forEach(alert => {
+                        triggerUrgentAwareness(alert);
+                    });
+                    // Update last check time to the most recent alert time + 1 sec to avoid duplicates
+                    const maxTime = data.urgent_alerts.reduce((max, a) => a.created_at > max ? a.created_at : max, lastUrgentCheck);
+                    lastUrgentCheck = maxTime;
+                }
+            } catch (error) {
+                console.error("Intelligence poll failed:", error);
+            }
+        }
+
+        function triggerUrgentAwareness(alert) {
+            // 1. Play subtle tactical sound if possible (optional enhancement)
+
+            // 2. High-visibility Toast
+            const toast = document.createElement('div');
+            toast.className = 'glass-card';
+            toast.style.cssText = `
+                position: fixed;
+                bottom: 30px;
+                right: 30px;
+                width: 350px;
+                padding: 25px;
+                background: rgba(20, 20, 20, 0.95);
+                border: 2px solid #ff4d4d;
+                box-shadow: 0 10px 40px rgba(255, 77, 77, 0.3);
+                z-index: 9999;
+                animation: slideInRight 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            `;
+            toast.innerHTML = `
+                <div style="display: flex; align-items: flex-start; gap: 15px;">
+                    <div style="width: 40px; height: 40px; background: #ff4d4d; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0; box-shadow: 0 0 15px rgba(255, 77, 77, 0.4);">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <div style="flex-grow: 1;">
+                        <div style="color: #ff4d4d; font-weight: 800; font-size: 10px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px;">URGENT BROADCAST</div>
+                        <div style="color: #fff; font-weight: 700; font-size: 15px; margin-bottom: 5px;">${alert.title}</div>
+                        <div style="color: var(--text-muted); font-size: 12px; line-height: 1.4;">${alert.content}</div>
+                        <div style="margin-top: 15px; display: flex; gap: 10px;">
+                            <button onclick="location.reload()" style="background: var(--accent); color: #000; border: none; padding: 6px 12px; border-radius: 6px; font-size: 10px; font-weight: 800; cursor: pointer;">REFRESH FEED</button>
+                            <button onclick="this.parentElement.parentElement.parentElement.parentElement.remove()" style="background: transparent; color: var(--text-muted); border: 1px solid var(--border); padding: 6px 12px; border-radius: 6px; font-size: 10px; font-weight: 800; cursor: pointer;">DISMISS</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(toast);
+
+            // 3. Browser Notification
+            if (Notification.permission === "granted") {
+                new Notification("URGENT: Infostream Broadcast", {
+                    body: `${alert.title}: ${alert.content}`,
+                    icon: "/static/favicon.ico"
+                });
+            } else if (Notification.permission !== "denied") {
+                Notification.requestPermission();
+            }
+        }
+
+        // Initialize polling (every 10 seconds)
+        setInterval(pollUrgentAlerts, 10000);
+
+        // Request notification permission on load
+        if (Notification.permission !== "granted" && Notification.permission !== "denied") {
+            Notification.requestPermission();
+        }
+
+        // Initial check
+        window.onload = filterContent;
+    </script>
+</body>
+
+</html>
