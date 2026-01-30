@@ -117,7 +117,7 @@
                 </a>
                 <a href="/logout" class="logout-link"
                     style="background: rgba(255, 68, 68, 0.1); padding: 8px 16px; border-radius: 12px; transition: 0.3s;">
-                    <i class="fas fa-power-off"></i> TERMINATE
+                    <i class="fas fa-power-off"></i> LOGOUT
                 </a>
             </div>
         </nav>
@@ -193,34 +193,35 @@
                             <h3 style="font-size: 20px; font-weight: 800; letter-spacing: 1px;">INITIATE BROADCAST</h3>
                         </div>
 
-                        <form method="post">
+                        <form method="post" id="broadcastForm" onsubmit="return validateBroadcastForm()">
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                                 <div class="form-group">
-                                    <label class="form-label">Transmission Header</label>
-                                    <input name="title" placeholder="Enter broadcast title..." required>
+                                    <label class="form-label">Title</label>
+                                    <input id="broadcast-title" name="title" placeholder="Enter broadcast title..."
+                                        required>
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label">Category</label>
                                     <select name="category" style="color: var(--accent); font-weight: 700;">
                                         <option value="Events">Events</option>
-                                        <option value="Placement">Placement</option>
+                                        <option value="department">Specific Department/Year</option>
                                         <option value="Exam Cell">Exam Cell</option>
                                     </select>
                                 </div>
                             </div>
 
                             <div class="form-group">
-                                <label class="form-label">Data Stream Content</label>
-                                <textarea name="content" rows="4" placeholder="Input detailed transmission data..."
-                                    required></textarea>
+                                <label class="form-label">Message</label>
+                                <textarea id="broadcast-content" name="content" rows="4"
+                                    placeholder="Input detailed transmission data..." required></textarea>
                             </div>
 
                             <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 25px;">
                                 <div class="form-group" style="margin-bottom: 0;">
-                                    <label class="form-label">Distribution Protocol</label>
-                                    <select name="type" onchange="toggleDept(this.value)"
+                                    <label class="form-label">Send To</label>
+                                    <select id="broadcast-type" name="type" onchange="toggleDept(this.value)"
                                         style="color: var(--accent); font-weight: 700;">
-                                        <option value="general">Global System Broadcast</option>
+                                        <option value="all">Everyone</option>
                                         <option value="department">Sector Restricted (Dept/Phase)</option>
                                     </select>
                                 </div>
@@ -236,57 +237,74 @@
                                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
                                     <div class="form-group" style="margin-bottom: 0;">
                                         <label class="form-label">Target Sector(s)</label>
+                                        <label
+                                            style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--accent); cursor: pointer; font-weight: 700; margin-bottom: 8px;">
+                                            <input type="checkbox" id="selectAllDeptBroadcast"
+                                                onclick="toggleAllCheckboxes('dept-checkbox', this.checked)"
+                                                style="width: auto; margin: 0;"> Select All
+                                        </label>
                                         <div
                                             style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
                                             <label
                                                 style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); cursor: pointer;">
                                                 <input type="checkbox" name="department" value="CSE"
-                                                    style="width: auto; margin: 0;"> CSE
+                                                    class="dept-checkbox" style="width: auto; margin: 0;"> CSE
                                             </label>
                                             <label
                                                 style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); cursor: pointer;">
                                                 <input type="checkbox" name="department" value="ECE"
-                                                    style="width: auto; margin: 0;"> ECE
+                                                    class="dept-checkbox" style="width: auto; margin: 0;"> ECE
                                             </label>
                                             <label
                                                 style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); cursor: pointer;">
                                                 <input type="checkbox" name="department" value="IT"
-                                                    style="width: auto; margin: 0;"> IT
+                                                    class="dept-checkbox" style="width: auto; margin: 0;"> IT
                                             </label>
                                             <label
                                                 style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); cursor: pointer;">
                                                 <input type="checkbox" name="department" value="MECH"
-                                                    style="width: auto; margin: 0;"> MECH
+                                                    class="dept-checkbox" style="width: auto; margin: 0;"> MECH
                                             </label>
                                             <label
                                                 style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); cursor: pointer;">
                                                 <input type="checkbox" name="department" value="CIVIL"
-                                                    style="width: auto; margin: 0;"> CIVIL
+                                                    class="dept-checkbox" style="width: auto; margin: 0;"> CIVIL
+                                            </label>
+                                            <label
+                                                style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); cursor: pointer;">
+                                                <input type="checkbox" name="department" value="AUTO"
+                                                    class="dept-checkbox" style="width: auto; margin: 0;"> AUTO
                                             </label>
                                         </div>
                                     </div>
                                     <div class="form-group" style="margin-bottom: 0;">
                                         <label class="form-label">Sector Phase(s)</label>
+                                        <label
+                                            style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--accent); cursor: pointer; font-weight: 700; margin-bottom: 8px;">
+                                            <input type="checkbox" id="selectAllYearBroadcast"
+                                                onclick="toggleAllCheckboxes('year-checkbox', this.checked)"
+                                                style="width: auto; margin: 0;"> Select All
+                                        </label>
                                         <div
                                             style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
                                             <label
                                                 style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); cursor: pointer;">
-                                                <input type="checkbox" name="year" value="1"
+                                                <input type="checkbox" name="year" value="1" class="year-checkbox"
                                                     style="width: auto; margin: 0;"> Phase 1
                                             </label>
                                             <label
                                                 style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); cursor: pointer;">
-                                                <input type="checkbox" name="year" value="2"
+                                                <input type="checkbox" name="year" value="2" class="year-checkbox"
                                                     style="width: auto; margin: 0;"> Phase 2
                                             </label>
                                             <label
                                                 style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); cursor: pointer;">
-                                                <input type="checkbox" name="year" value="3"
+                                                <input type="checkbox" name="year" value="3" class="year-checkbox"
                                                     style="width: auto; margin: 0;"> Phase 3
                                             </label>
                                             <label
                                                 style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); cursor: pointer;">
-                                                <input type="checkbox" name="year" value="4"
+                                                <input type="checkbox" name="year" value="4" class="year-checkbox"
                                                     style="width: auto; margin: 0;"> Phase 4
                                             </label>
                                         </div>
@@ -295,7 +313,7 @@
                             </div>
 
                             <button type="submit" class="submit-btn">
-                                <i class="fas fa-paper-plane"></i> EXECUTE TRANSMISSION
+                                <i class="fas fa-satellite-dish"></i> MARK AS URGENT
                             </button>
                         </form>
                     </div>
@@ -311,46 +329,60 @@
                             <h3 style="font-size: 20px; font-weight: 800; letter-spacing: 1px;">PLACEMENT DISPATCH</h3>
                         </div>
 
-                        <form action="/admin/placement" method="post">
+                        <form action="/admin/placement" method="post" id="placementForm"
+                            onsubmit="return validatePlacementForm()">
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                                 <div class="form-group">
-                                    <label class="form-label">Corporate Entity</label>
-                                    <input name="company" placeholder="e.g. Nexus Dynamics" required>
+                                    <label class="form-label">Company Name</label>
+                                    <input id="placement-company" name="company" placeholder="e.g. Nexus Dynamics"
+                                        required>
                                 </div>
                                 <div class="form-group">
-                                    <label class="form-label">Operational Role</label>
-                                    <input name="role" placeholder="e.g. Systems Architect" required>
+                                    <label class="form-label">Job Title</label>
+                                    <input id="placement-role" name="role" placeholder="e.g. Systems Architect"
+                                        required>
                                 </div>
                             </div>
 
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                                 <div class="form-group">
-                                    <label class="form-label">Eligibility Parameters</label>
-                                    <input name="eligibility" placeholder="e.g. CGPA > 8.0" required>
+                                    <label class="form-label">Eligibility Criteria</label>
+                                    <input id="placement-eligibility" name="eligibility" placeholder="e.g. CGPA > 8.0"
+                                        required>
                                 </div>
                                 <div class="form-group">
-                                    <label class="form-label">Activation Deadline</label>
-                                    <input type="date" name="deadline" required>
+                                    <label class="form-label">Apply By Date</label>
+                                    <input type="date" id="placement-deadline" name="deadline" required>
+                                    <script>
+                                        // Set minimum date to tomorrow
+                                        const dateInput = document.getElementById('placement-deadline');
+                                        const tomorrow = new Date();
+                                        tomorrow.setDate(tomorrow.getDate() + 1);
+                                        const year = tomorrow.getFullYear();
+                                        const month = String(tomorrow.getMonth() + 1).padStart(2, '0');
+                                        const day = String(tomorrow.getDate()).padStart(2, '0');
+                                        dateInput.min = `${year}-${month}-${day}`;
+                                    </script>
                                 </div>
                             </div>
 
                             <div class="form-group"
                                 style="margin-bottom: 30px; display: flex; align-items: center; gap: 20px;">
                                 <div style="flex: 1;">
-                                    <label class="form-label">Detailed Intelligence</label>
-                                    <textarea name="description" rows="3" placeholder="Input recruitment parameters..."
-                                        required></textarea>
+                                    <label class="form-label">Job Description</label>
+                                    <textarea id="placement-description" name="description" rows="3"
+                                        placeholder="Enter job details..." required></textarea>
                                 </div>
                                 <label
                                     style="display: flex; align-items: center; gap: 10px; color: #adff00; font-weight: 800; font-size: 11px; cursor: pointer; background: rgba(173, 255, 0, 0.05); padding: 12px 20px; border-radius: 12px; border: 1px solid rgba(173, 255, 0, 0.2); margin-top: 25px;">
                                     <input type="checkbox" name="is_urgent" value="1" style="width: auto; margin: 0;">
-                                    <i class="fas fa-bolt"></i> URGENT DESPATCH
+                                    <i class="fas fa-bolt"></i> MARK AS URGENT
                                 </label>
                             </div>
 
                             <button type="submit" class="submit-btn"
                                 style="background: #adff00; box-shadow: 0 4px 15px rgba(173, 255, 0, 0.2);">
-                                <i class="fas fa-upload"></i> PUBLISH RECRUITMENT DATA
+                                <i class="fas fa-upload"></i> POST JOB
                             </button>
                         </form>
                     </div>
@@ -363,85 +395,103 @@
                                 style="width: 48px; height: 48px; background: #ffbc00; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #000;">
                                 <i class="fas fa-file-invoice" style="font-size: 20px;"></i>
                             </div>
-                            <h3 style="font-size: 20px; font-weight: 800; letter-spacing: 1px;">ASSESSMENT CENTER</h3>
+                            <h3 style="font-size: 20px; font-weight: 800; letter-spacing: 1px;">POST EXAM NOTICE</h3>
                         </div>
 
-                        <form action="/admin/exam" method="post">
+                        <form action="/admin/exam" method="post" id="examForm" onsubmit="return validateExamForm()">
                             <div class="form-group">
-                                <label class="form-label">Assessment Classification</label>
+                                <label class="form-label">Exam Type</label>
                                 <select name="exam_type" style="color: #ffbc00; font-weight: 700;">
-                                    <option value="Internal Test">Internal Test Sequence</option>
-                                    <option value="University Exam">University Nexus Update</option>
-                                    <option value="Results">Result Publication</option>
-                                    <option value="Other">Special Assessment</option>
+                                    <option value="Internal Test">Internal Test</option>
+                                    <option value="University Exam">University Exam</option>
+                                    <option value="Results">Results</option>
+                                    <option value="Other">Other</option>
                                 </select>
                             </div>
 
                             <div class="form-group">
-                                <label class="form-label">Update Header</label>
-                                <input name="title" placeholder="e.g. Semester 5 Main Examination" required>
+                                <label class="form-label">Title</label>
+                                <input id="exam-title" name="title" placeholder="e.g. Semester 5 Main Examination"
+                                    required>
                             </div>
 
                             <div class="form-group">
-                                <label class="form-label">Detailed Payload</label>
-                                <textarea name="content" rows="3" placeholder="Input examination parameters..."
+                                <label class="form-label">Details</label>
+                                <textarea id="exam-content" name="content" rows="3" placeholder="Enter exam details..."
                                     required></textarea>
                             </div>
 
                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px;">
                                 <div class="form-group" style="margin-bottom: 0;">
-                                    <label class="form-label">Target Sector(s)</label>
+                                    <label class="form-label">Select Department(s)</label>
+                                    <label
+                                        style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #ffbc00; cursor: pointer; font-weight: 700; margin-bottom: 8px;">
+                                        <input type="checkbox" id="selectAllDeptExam"
+                                            onclick="toggleAllCheckboxes('exam-dept-checkbox', this.checked)"
+                                            style="width: auto; margin: 0;"> Select All
+                                    </label>
                                     <div
                                         style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
                                         <label
                                             style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); cursor: pointer;">
                                             <input type="checkbox" name="department" value="CSE"
-                                                style="width: auto; margin: 0;"> CSE
+                                                class="exam-dept-checkbox" style="width: auto; margin: 0;"> CSE
                                         </label>
                                         <label
                                             style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); cursor: pointer;">
                                             <input type="checkbox" name="department" value="ECE"
-                                                style="width: auto; margin: 0;"> ECE
+                                                class="exam-dept-checkbox" style="width: auto; margin: 0;"> ECE
                                         </label>
                                         <label
                                             style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); cursor: pointer;">
                                             <input type="checkbox" name="department" value="IT"
-                                                style="width: auto; margin: 0;"> IT
+                                                class="exam-dept-checkbox" style="width: auto; margin: 0;"> IT
                                         </label>
                                         <label
                                             style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); cursor: pointer;">
                                             <input type="checkbox" name="department" value="MECH"
-                                                style="width: auto; margin: 0;"> MECH
+                                                class="exam-dept-checkbox" style="width: auto; margin: 0;"> MECH
                                         </label>
                                         <label
                                             style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); cursor: pointer;">
                                             <input type="checkbox" name="department" value="CIVIL"
-                                                style="width: auto; margin: 0;"> CIVIL
+                                                class="exam-dept-checkbox" style="width: auto; margin: 0;"> CIVIL
+                                        </label>
+                                        <label
+                                            style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); cursor: pointer;">
+                                            <input type="checkbox" name="department" value="AUTO"
+                                                class="exam-dept-checkbox" style="width: auto; margin: 0;"> AUTO
                                         </label>
                                     </div>
                                 </div>
                                 <div class="form-group" style="margin-bottom: 0;">
-                                    <label class="form-label">Target Phase(s)</label>
+                                    <label class="form-label">Select Year(s)</label>
+                                    <label
+                                        style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #ffbc00; cursor: pointer; font-weight: 700; margin-bottom: 8px;">
+                                        <input type="checkbox" id="selectAllYearExam"
+                                            onclick="toggleAllCheckboxes('exam-year-checkbox', this.checked)"
+                                            style="width: auto; margin: 0;"> Select All
+                                    </label>
                                     <div
                                         style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
                                         <label
                                             style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); cursor: pointer;">
-                                            <input type="checkbox" name="year" value="1"
+                                            <input type="checkbox" name="year" value="1" class="exam-year-checkbox"
                                                 style="width: auto; margin: 0;"> Phase 1
                                         </label>
                                         <label
                                             style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); cursor: pointer;">
-                                            <input type="checkbox" name="year" value="2"
+                                            <input type="checkbox" name="year" value="2" class="exam-year-checkbox"
                                                 style="width: auto; margin: 0;"> Phase 2
                                         </label>
                                         <label
                                             style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); cursor: pointer;">
-                                            <input type="checkbox" name="year" value="3"
+                                            <input type="checkbox" name="year" value="3" class="exam-year-checkbox"
                                                 style="width: auto; margin: 0;"> Phase 3
                                         </label>
                                         <label
                                             style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); cursor: pointer;">
-                                            <input type="checkbox" name="year" value="4"
+                                            <input type="checkbox" name="year" value="4" class="exam-year-checkbox"
                                                 style="width: auto; margin: 0;"> Phase 4
                                         </label>
                                     </div>
@@ -451,12 +501,12 @@
                             <label
                                 style="display: flex; align-items: center; gap: 10px; color: #ffbc00; font-weight: 800; font-size: 11px; cursor: pointer; background: rgba(255, 188, 0, 0.05); padding: 12px 20px; border-radius: 12px; border: 1px solid rgba(255, 188, 0, 0.2); margin-bottom: 30px; width: fit-content;">
                                 <input type="checkbox" name="is_urgent" value="1" style="width: auto; margin: 0;">
-                                <i class="fas fa-exclamation-circle"></i> HIGH PRIORITY ASSESSMENT
+                                <i class="fas fa-exclamation-circle"></i> MARK AS URGENT
                             </label>
 
                             <button type="submit" class="submit-btn"
                                 style="background: transparent; border: 1px solid #ffbc00; color: #ffbc00; box-shadow: none;">
-                                <i class="fas fa-check-double"></i> AUTHORIZE ASSESSMENT
+                                <i class="fas fa-check-double"></i> POST EXAM NOTICE
                             </button>
                         </form>
                     </div>
@@ -469,29 +519,29 @@
                         <div class="glass-card" style="padding: 20px; border-left: 4px solid var(--accent);">
                             <div
                                 style="font-size: 10px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">
-                                Network Population</div>
-                            <div style="font-size: 24px; font-weight: 900; color: #fff;">{{ users|length }} <span
-                                    style="font-size: 12px; color: var(--text-muted); font-weight: 500;">Nodes</span>
+                                Total Users</div>
+                            <div style="font-size: 24px; font-weight: 900; color: var(--text-primary);">{{ users|length
+                                }} <span
+                                    style="font-size: 12px; color: var(--text-muted); font-weight: 500;">Users</span>
                             </div>
                         </div>
                         <div class="glass-card" style="padding: 20px; border-left: 4px solid #adff00;">
                             <div
                                 style="font-size: 10px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">
-                                Authorized Staff</div>
-                            <div style="font-size: 24px; font-weight: 900; color: #fff;">
+                                Staff Members</div>
+                            <div style="font-size: 24px; font-weight: 900; color: var(--text-primary);">
                                 {% set staff_count = [] %}
                                 {% for u in users %}{% if u.role == 'staff' %}{% set _ = staff_count.append(1) %}{%
                                 endif %}{% endfor %}
                                 {{ staff_count|length }}
-                                <span
-                                    style="font-size: 12px; color: var(--text-muted); font-weight: 500;">Entities</span>
+                                <span style="font-size: 12px; color: var(--text-muted); font-weight: 500;">Staff</span>
                             </div>
                         </div>
                         <div class="glass-card" style="padding: 20px; border-left: 4px solid #ffbc00;">
                             <div
                                 style="font-size: 10px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">
                                 Registered Students</div>
-                            <div style="font-size: 24px; font-weight: 900; color: #fff;">
+                            <div style="font-size: 24px; font-weight: 900; color: var(--text-primary);">
                                 {% set student_count = [] %}
                                 {% for u in users %}{% if u.role == 'student' %}{% set _ = student_count.append(1) %}{%
                                 endif %}{% endfor %}
@@ -510,14 +560,14 @@
                                     style="width: 42px; height: 42px; background: rgba(0, 242, 255, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--accent); border: 1px solid rgba(0, 242, 255, 0.2);">
                                     <i class="fas fa-fingerprint" style="font-size: 20px;"></i>
                                 </div>
-                                <h3 style="font-size: 18px; font-weight: 800; letter-spacing: 1px;">CAMPUS NETWORK
-                                    ROSTER</h3>
+                                <h3 style="font-size: 18px; font-weight: 800; letter-spacing: 1px;">USER
+                                    LIST</h3>
                             </div>
                             <div style="position: relative; width: 300px;">
                                 <i class="fas fa-search"
                                     style="position: absolute; left: 15px; top: 14px; color: var(--text-muted); font-size: 12px;"></i>
-                                <input type="text" id="userSearch" placeholder="Search identities..."
-                                    style="padding: 12px 15px 12px 42px; font-size: 13px; margin: 0; background: rgba(255,255,255,0.03); border: 1px solid var(--border);"
+                                <input type="text" id="userSearch" placeholder="Search users..."
+                                    style="padding: 12px 15px 12px 42px; font-size: 13px; margin: 0; background: var(--input-bg); border: 1px solid var(--border);"
                                     onkeyup="filterUsers()">
                             </div>
                         </div>
@@ -528,16 +578,16 @@
                                     <tr style="text-align: left;">
                                         <th
                                             style="padding: 10px 15px; font-size: 10px; text-transform: uppercase; color: var(--text-muted); font-weight: 800; letter-spacing: 1px;">
-                                            Identity</th>
+                                            Username</th>
                                         <th
                                             style="padding: 10px 15px; font-size: 10px; text-transform: uppercase; color: var(--text-muted); font-weight: 800; letter-spacing: 1px;">
-                                            Access Protocol</th>
+                                            Role</th>
                                         <th
                                             style="padding: 10px 15px; font-size: 10px; text-transform: uppercase; color: var(--text-muted); font-weight: 800; letter-spacing: 1px;">
-                                            Sector Assignment</th>
+                                            Department</th>
                                         <th
                                             style="padding: 10px 15px; font-size: 10px; text-transform: uppercase; color: var(--text-muted); font-weight: 800; letter-spacing: 1px; text-align: right;">
-                                            System Control</th>
+                                            Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="userTableBody">
@@ -551,7 +601,9 @@
                                                     <i class="fas fa-id-badge"></i>
                                                 </div>
                                                 <div>
-                                                    <div style="font-weight: 700; font-size: 15px; color: #fff;">{{
+                                                    <div
+                                                        style="font-weight: 700; font-size: 15px; color: var(--text-primary);">
+                                                        {{
                                                         u.username }}</div>
                                                     <div
                                                         style="display: flex; gap: 10px; align-items: center; margin-top: 2px;">
@@ -628,7 +680,7 @@
                                     style="width: 36px; height: 36px; background: #adff00; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #000;">
                                     <i class="fas fa-user-plus" style="font-size: 16px;"></i>
                                 </div>
-                                <h3 style="font-size: 16px; font-weight: 800;">PROVISION STAFF</h3>
+                                <h3 style="font-size: 16px; font-weight: 800;">ADD STAFF MEMBER</h3>
                             </div>
                             <form action="/admin/add_staff" method="post">
                                 <div class="form-group">
@@ -645,7 +697,7 @@
                                 </div>
                                 <button type="submit" class="submit-btn"
                                     style="background: #adff00; color: #000; border: none; padding: 12px;">
-                                    AUTHORIZE STAFF
+                                    ADD STAFF
                                 </button>
                             </form>
                         </div>
@@ -657,7 +709,7 @@
                                     style="width: 36px; height: 36px; background: #ffbc00; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #000;">
                                     <i class="fas fa-graduation-cap" style="font-size: 16px;"></i>
                                 </div>
-                                <h3 style="font-size: 16px; font-weight: 800;">PROVISION STUDENT</h3>
+                                <h3 style="font-size: 16px; font-weight: 800;">ADD STUDENT</h3>
                             </div>
                             <form action="/admin/add_student" method="post">
                                 <div class="form-group">
@@ -674,7 +726,7 @@
                                 </div>
                                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                                     <div class="form-group">
-                                        <label class="form-label">Sector</label>
+                                        <label class="form-label">Department</label>
                                         <select name="department" style="font-size: 12px;">
                                             <option value="CSE">CSE</option>
                                             <option value="ECE">ECE</option>
@@ -685,7 +737,7 @@
                                         </select>
                                     </div>
                                     <div class="form-group">
-                                        <label class="form-label">Phase</label>
+                                        <label class="form-label">Year</label>
                                         <select name="year" style="font-size: 12px;">
                                             <option value="1">1st Year</option>
                                             <option value="2">2nd Year</option>
@@ -696,7 +748,7 @@
                                 </div>
                                 <button type="submit" class="submit-btn"
                                     style="background: #ffbc00; color: #000; border: none; padding: 12px;">
-                                    AUTHORIZE STUDENT
+                                    ADD STUDENT
                                 </button>
                             </form>
                         </div>
@@ -710,50 +762,70 @@
                             style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 30px;">
                             <div style="display: flex; align-items: center; gap: 15px;">
                                 <i class="fas fa-history" style="color: var(--accent); font-size: 20px;"></i>
-                                <h3 style="font-size: 18px; font-weight: 800; letter-spacing: 1px;">SYSTEM LOGS</h3>
+                                <h3 style="font-size: 20px; font-weight: 800; letter-spacing: 1px;">POST ANNOUNCEMENT
+                                </h3>
                             </div>
                             <div style="position: relative; width: 250px;">
                                 <i class="fas fa-search"
                                     style="position: absolute; left: 12px; top: 12px; color: var(--text-muted); font-size: 11px;"></i>
                                 <input type="text" id="logSearch" placeholder="Search history..."
-                                    style="padding: 10px 15px 10px 35px; font-size: 12px; margin-bottom: 0;"
+                                    style="padding: 10px 15px 10px 35px; font-size: 12px; margin-bottom: 0; background: var(--input-bg); border: 1px solid var(--border);"
                                     onkeyup="filterLogs()">
                             </div>
                         </div>
 
-                        <div id="logsContainer" style="max-height: 600px; overflow-y: auto; padding-right: 10px;">
+                        <div id="logsContainer"
+                            style="max-height: 800px; overflow-y: auto; padding-right: 15px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
                             {% set all_logs = [] %}
                             {% for n in notifications %}
-                            {% set _ = all_logs.append({'type': 'Broadcast', 'title': n.title, 'content': n.content,
-                            'date': n.created_at, 'posted_by': n.posted_by, 'color_class': 'text-accent'}) %}
+                            {% set _ = all_logs.append({'id': n.id, 'type': 'Broadcast', 'title': n.title, 'content':
+                            n.content,
+                            'date': n.created_at, 'posted_by': n.posted_by, 'color_class': 'text-accent', 'route':
+                            'delete_notification'}) %}
                             {% endfor %}
                             {% for p in placements %}
-                            {% set _ = all_logs.append({'type': 'Placement', 'title': p.company, 'content': p.role,
-                            'date': p.created_at, 'posted_by': p.posted_by, 'color_class': 'text-secondary'}) %}
+                            {% set _ = all_logs.append({'id': p.id, 'type': 'Placement', 'title': p.company, 'content':
+                            p.role,
+                            'date': p.created_at, 'posted_by': p.posted_by, 'color_class': 'text-secondary', 'route':
+                            'delete_placement'}) %}
                             {% endfor %}
                             {% for e in exams %}
-                            {% set _ = all_logs.append({'type': 'Exam', 'title': e.title, 'content': e.exam_type,
-                            'date': e.created_at, 'posted_by': e.posted_by, 'color_class': 'text-warning'}) %}
+                            {% set _ = all_logs.append({'id': e.id, 'type': 'Exam', 'title': e.title, 'content':
+                            e.exam_type,
+                            'date': e.created_at, 'posted_by': e.posted_by, 'color_class': 'text-warning', 'route':
+                            'delete_exam'}) %}
                             {% endfor %}
 
                             {% for log in all_logs|sort(attribute='date', reverse=True) %}
                             <div class="log-entry"
-                                style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); padding: 15px; border-radius: 12px; margin-bottom: 10px; transition: 0.3s;">
+                                style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); padding: 18px; border-radius: 12px; transition: 0.3s; display: flex; flex-direction: column; height: 100%;">
                                 <div
-                                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                                    <div style="display: flex; gap: 10px; align-items: center;">
-                                        <span class="{{ log.color_class }}"
-                                            style="font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; background: rgba(255,255,255,0.03); padding: 2px 6px; border-radius: 4px;">{{
-                                            log.type }}</span>
-                                        {% if log.posted_by %}
-                                        <span style="font-size: 10px; color: var(--accent); font-weight: 600;"><i
-                                                class="fas fa-user-edit"></i> {{ log.posted_by }}</span>
-                                        {% endif %}
+                                    style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+                                    <div>
+                                        <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 5px;">
+                                            <span class="{{ log.color_class }}"
+                                                style="font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; background: rgba(255,255,255,0.03); padding: 2px 6px; border-radius: 4px;">{{
+                                                log.type }}</span>
+                                            {% if log.posted_by %}
+                                            <span style="font-size: 10px; color: var(--accent); font-weight: 600;"><i
+                                                    class="fas fa-user-edit"></i> {{ log.posted_by }}</span>
+                                            {% endif %}
+                                        </div>
+                                        <div
+                                            style="font-size: 14px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px;">
+                                            {{
+                                            log.title }}</div>
                                     </div>
-                                    <span style="font-size: 10px; color: var(--text-muted);">{{ log.date }}</span>
+                                    <div style="text-align: right;">
+                                        <div style="font-size: 10px; color: var(--text-muted); margin-bottom: 8px;">{{
+                                            log.date|format_date }}</div>
+                                        <button
+                                            onclick='terminateTransmission("{{ log.route }}", {{ log.id }}, {{ log.title|tojson|safe }})'
+                                            style="background: rgba(255, 77, 77, 0.1); border: 1px solid rgba(255, 77, 77, 0.2); color: #ff4d4d; padding: 4px 10px; border-radius: 6px; font-size: 9px; font-weight: 800; cursor: pointer; transition: 0.3s;">
+                                            <i class="fas fa-trash-alt"></i> DELETE
+                                        </button>
+                                    </div>
                                 </div>
-                                <div style="font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 4px;">{{
-                                    log.title }}</div>
                                 <div style="font-size: 12px; color: var(--text-muted); line-height: 1.4;">{{
                                     log.content|truncate(120) }}</div>
                             </div>
@@ -766,11 +838,25 @@
     </div>
 
     <script>
+        function terminateTransmission(route, id, title) {
+            if (confirm(`CRITICAL: Are you sure you want to permanently delete "${title}"? This data stream cannot be recovered.`)) {
+                window.location.href = `/admin/${route}/${id}`;
+            }
+        }
+
         function revokeIdentity(id, username) {
             if (confirm(`CRITICAL: Are you sure you want to revoke system access for "${username}"? This action is irreversible.`)) {
                 window.location.href = `/admin/delete_user/${id}`;
             }
         }
+
+        function toggleAllCheckboxes(className, isChecked) {
+            const checkboxes = document.querySelectorAll(`.${className}`);
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = isChecked;
+            });
+        }
+
 
         function setTheme(theme) {
             document.documentElement.setAttribute('data-theme', theme);
@@ -816,8 +902,8 @@
                 tab.style.color = 'var(--text-muted)';
             });
             element.classList.add('active');
-            element.style.borderColor = 'var(--border)';
-            element.style.color = '#fff';
+            element.style.borderColor = 'var(--accent)';
+            element.style.color = 'var(--text-primary)';
 
             localStorage.setItem('activeAdminTab', sectionId);
         }
@@ -849,6 +935,114 @@
                     row.style.display = 'none';
                 }
             });
+        }
+
+        // Validation Functions
+        function validateBroadcastForm() {
+            const title = document.getElementById('broadcast-title').value.trim();
+            const content = document.getElementById('broadcast-content').value.trim();
+            const type = document.getElementById('broadcast-type').value;
+
+            if (!title || title.length === 0) {
+                alert('⚠️ VALIDATION ERROR: Transmission header cannot be empty!');
+                return false;
+            }
+
+            if (!content || content.length === 0) {
+                alert('⚠️ VALIDATION ERROR: Data stream content cannot be empty!');
+                return false;
+            }
+
+            // If department type, check if at least one department and year is selected
+            if (type === 'department') {
+                const deptChecked = document.querySelectorAll('.dept-checkbox:checked').length;
+                const yearChecked = document.querySelectorAll('.year-checkbox:checked').length;
+
+                if (deptChecked === 0) {
+                    alert('⚠️ VALIDATION ERROR: Please select at least one target sector!');
+                    return false;
+                }
+
+                if (yearChecked === 0) {
+                    alert('⚠️ VALIDATION ERROR: Please select at least one sector phase!');
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        function validatePlacementForm() {
+            const company = document.getElementById('placement-company').value.trim();
+            const role = document.getElementById('placement-role').value.trim();
+            const eligibility = document.getElementById('placement-eligibility').value.trim();
+            const deadline = document.getElementById('placement-deadline').value.trim();
+            const description = document.getElementById('placement-description').value.trim();
+
+            if (!company || company.length === 0) {
+                alert('⚠️ VALIDATION ERROR: Corporate entity cannot be empty!');
+                return false;
+            }
+
+            if (!role || role.length === 0) {
+                alert('⚠️ VALIDATION ERROR: Operational role cannot be empty!');
+                return false;
+            }
+
+            if (!eligibility || eligibility.length === 0) {
+                alert('⚠️ VALIDATION ERROR: Eligibility parameters cannot be empty!');
+                return false;
+            }
+
+            if (!deadline || deadline.length === 0) {
+                alert('⚠️ VALIDATION ERROR: Activation deadline must be set!');
+                return false;
+            }
+
+            const selectedDate = new Date(deadline);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            if (selectedDate <= today) {
+                alert('⚠️ VALIDATION ERROR: Activation deadline must be a future date!');
+                return false;
+            }
+
+            if (!description || description.length === 0) {
+                alert('⚠️ VALIDATION ERROR: Detailed intelligence cannot be empty!');
+                return false;
+            }
+
+            return true;
+        }
+
+        function validateExamForm() {
+            const title = document.getElementById('exam-title').value.trim();
+            const content = document.getElementById('exam-content').value.trim();
+            const deptChecked = document.querySelectorAll('.exam-dept-checkbox:checked').length;
+            const yearChecked = document.querySelectorAll('.exam-year-checkbox:checked').length;
+
+            if (!title || title.length === 0) {
+                alert('⚠️ VALIDATION ERROR: Update header cannot be empty!');
+                return false;
+            }
+
+            if (!content || content.length === 0) {
+                alert('⚠️ VALIDATION ERROR: Detailed payload cannot be empty!');
+                return false;
+            }
+
+            if (deptChecked === 0) {
+                alert('⚠️ VALIDATION ERROR: Please select at least one target sector!');
+                return false;
+            }
+
+            if (yearChecked === 0) {
+                alert('⚠️ VALIDATION ERROR: Please select at least one target phase!');
+                return false;
+            }
+
+            return true;
         }
 
         window.onload = function () {

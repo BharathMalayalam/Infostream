@@ -12,6 +12,19 @@ app = Flask(__name__)
 app.secret_key = 'supersecretkey'
 DB_NAME = 'notifications.db'
 
+# Custom date filter for dd/mm/yyyy format
+@app.template_filter('format_date')
+def format_date(date_string):
+    if not date_string:
+        return ''
+    try:
+        # Parse the date string and format as dd/mm/yyyy
+        date_obj = datetime.strptime(date_string.split()[0], '%Y-%m-%d')
+        return date_obj.strftime('%d/%m/%Y')
+    except:
+        return date_string
+
+
 # ======================
 # Database Helpers
 # ======================
@@ -141,9 +154,18 @@ def login():
 @login_required(role=['admin', 'staff'])
 def admin_dashboard():
     if request.method == 'POST':
-        title = request.form['title']
-        content = request.form['content']
+        title = request.form['title'].strip()
+        content = request.form['content'].strip()
         notif_type = request.form['type']
+
+        # Server-side validation
+        if not title or len(title) == 0:
+            flash('Validation Error: Transmission header cannot be empty')
+            return redirect(url_for('admin_dashboard'))
+        
+        if not content or len(content) == 0:
+            flash('Validation Error: Data stream content cannot be empty')
+            return redirect(url_for('admin_dashboard'))
 
         departments = None
         years = None
@@ -151,6 +173,15 @@ def admin_dashboard():
             # Handle multi-select from form
             departments = ','.join(request.form.getlist('department'))
             years = ','.join(request.form.getlist('year'))
+            
+            # Validate department and year selection
+            if not departments or len(departments) == 0:
+                flash('Validation Error: Please select at least one target sector')
+                return redirect(url_for('admin_dashboard'))
+            
+            if not years or len(years) == 0:
+                flash('Validation Error: Please select at least one sector phase')
+                return redirect(url_for('admin_dashboard'))
 
         is_urgent = 1 if request.form.get('is_urgent') else 0
         category = request.form.get('category', 'Events')
@@ -252,11 +283,42 @@ def delete_user(user_id):
 @app.route('/admin/placement', methods=['POST'])
 @login_required(role=['admin', 'staff'])
 def admin_placement():
-    company = request.form['company']
-    role = request.form['role']
-    eligibility = request.form['eligibility']
-    deadline = request.form['deadline']
-    description = request.form['description']
+    company = request.form['company'].strip()
+    role = request.form['role'].strip()
+    eligibility = request.form['eligibility'].strip()
+    deadline = request.form['deadline'].strip()
+    description = request.form['description'].strip()
+
+    # Server-side validation
+    if not company or len(company) == 0:
+        flash('Validation Error: Corporate entity cannot be empty')
+        return redirect(url_for('admin_dashboard'))
+    
+    if not role or len(role) == 0:
+        flash('Validation Error: Operational role cannot be empty')
+        return redirect(url_for('admin_dashboard'))
+    
+    if not eligibility or len(eligibility) == 0:
+        flash('Validation Error: Eligibility parameters cannot be empty')
+        return redirect(url_for('admin_dashboard'))
+    
+    if not deadline or len(deadline) == 0:
+        flash('Validation Error: Activation deadline must be set')
+        return redirect(url_for('admin_dashboard'))
+    
+    # Date validation: Deadline must be in the future
+    try:
+        deadline_date = datetime.strptime(deadline, '%Y-%m-%d')
+        if deadline_date.date() <= datetime.now().date():
+            flash('Validation Error: Activation deadline must be a future date')
+            return redirect(url_for('admin_dashboard'))
+    except ValueError:
+        flash('Validation Error: Invalid deadline format')
+        return redirect(url_for('admin_dashboard'))
+    
+    if not description or len(description) == 0:
+        flash('Validation Error: Detailed intelligence cannot be empty')
+        return redirect(url_for('admin_dashboard'))
 
     is_urgent = 1 if request.form.get('is_urgent') else 0
     category = 'Placement'
@@ -278,10 +340,27 @@ def admin_placement():
 @login_required(role=['admin', 'staff'])
 def admin_exam():
     exam_type = request.form['exam_type']
-    title = request.form['title']
-    content = request.form['content']
+    title = request.form['title'].strip()
+    content = request.form['content'].strip()
     departments = ','.join(request.form.getlist('department'))
     years = ','.join(request.form.getlist('year'))
+
+    # Server-side validation
+    if not title or len(title) == 0:
+        flash('Validation Error: Update header cannot be empty')
+        return redirect(url_for('admin_dashboard'))
+    
+    if not content or len(content) == 0:
+        flash('Validation Error: Detailed payload cannot be empty')
+        return redirect(url_for('admin_dashboard'))
+    
+    if not departments or len(departments) == 0:
+        flash('Validation Error: Please select at least one target sector')
+        return redirect(url_for('admin_dashboard'))
+    
+    if not years or len(years) == 0:
+        flash('Validation Error: Please select at least one target phase')
+        return redirect(url_for('admin_dashboard'))
 
     is_urgent = 1 if request.form.get('is_urgent') else 0
     category = 'Exam Cell'
@@ -297,6 +376,39 @@ def admin_exam():
 
     flash('Exam update published')
 
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin/delete_notification/<int:post_id>')
+@login_required(role=['admin', 'staff'])
+def delete_notification(post_id):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute('DELETE FROM notifications WHERE id = ?', (post_id,))
+    conn.commit()
+    conn.close()
+    flash('Notification deleted successfully')
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin/delete_placement/<int:post_id>')
+@login_required(role=['admin', 'staff'])
+def delete_placement(post_id):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute('DELETE FROM placements WHERE id = ?', (post_id,))
+    conn.commit()
+    conn.close()
+    flash('Placement record deleted successfully')
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin/delete_exam/<int:post_id>')
+@login_required(role=['admin', 'staff'])
+def delete_exam(post_id):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute('DELETE FROM exams WHERE id = ?', (post_id,))
+    conn.commit()
+    conn.close()
+    flash('Exam record deleted successfully')
     return redirect(url_for('admin_dashboard'))
 
 @app.route('/student')

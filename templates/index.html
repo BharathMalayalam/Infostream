@@ -22,10 +22,11 @@
                 <i class="fas fa-signal" style="font-size: 32px; color: var(--accent);"></i>
             </div>
             <h1 class="logo-text" style="font-size: 42px; margin-bottom: 8px;">INFOSTREAM</h1>
-            <p class="sub-logo" style="font-size: 14px; letter-spacing: 6px; color: var(--accent);">Next-Gen Campus
-                Intelligence</p>
-            <p style="color: var(--text-muted); max-width: 500px; margin: 0 auto; font-size: 16px;">Seamlessly connect
-                with your campus ecosystem. Real-time updates, curated insights, and instant connectivity.</p>
+            <p class="sub-logo" style="font-size: 14px; letter-spacing: 6px; color: var(--accent);">Student Notification
+                System</p>
+            <p style="color: var(--text-muted); max-width: 500px; margin: 0 auto; font-size: 16px;">Stay updated with
+                campus announcements, job placements, and exam schedules. All your important notifications in one place.
+            </p>
         </header>
 
         <div class="portal-grid">
@@ -37,22 +38,20 @@
                     </div>
                 </div>
                 <span>ADMIN PORTAL</span>
-                <p style="font-size: 12px; color: var(--text-muted); margin-top: -10px;">Broadcast & Manage Node
-                    Transmissions</p>
+                <p style="font-size: 12px; color: var(--text-muted); margin-top: -10px;">Post & Manage Announcements</p>
             </a>
             <a href="{{ url_for('login', role='student') }}" class="portal-card">
                 <i class="fas fa-user-graduate"></i>
                 <span>STUDENT PORTAL</span>
-                <p style="font-size: 12px; color: var(--text-muted); margin-top: -10px;">Access Personalized
-                    Intelligence Streams</p>
+                <p style="font-size: 12px; color: var(--text-muted); margin-top: -10px;">View Your Notifications</p>
             </a>
         </div>
 
         <div style="text-align: center; margin-top: 60px; padding: 20px; border-top: 1px solid var(--border);">
-            <p style="color: var(--text-muted); font-size: 14px;">First time in the ecosystem?
+            <p style="color: var(--text-muted); font-size: 14px;">First time here?
                 <a href="/register" class="logout-link"
                     style="display: inline-flex; color: var(--accent); margin-left: 8px;">
-                    Establish Identity <i class="fas fa-arrow-right" style="margin-left: 8px; font-size: 10px;"></i>
+                    Create Account <i class="fas fa-arrow-right" style="margin-left: 8px; font-size: 10px;"></i>
                 </a>
             </p>
         </div>

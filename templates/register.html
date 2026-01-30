@@ -53,11 +53,11 @@
         </div>
         <div class="glass-card">
             <div style="text-align: center; margin-bottom: 30px;">
-                <h2 style="font-size: 24px; font-weight: 800; letter-spacing: 1px; margin-bottom: 8px;">ESTABLISH
-                    IDENTITY</h2>
+                <h2 style="font-size: 24px; font-weight: 800; letter-spacing: 1px; margin-bottom: 8px;">CREATE ACCOUNT
+                </h2>
                 <p
                     style="color: var(--accent); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 3px;">
-                    Initialize New Ecosystem Node</p>
+                    Register New User</p>
             </div>
 
             {% with messages = get_flashed_messages() %}
@@ -74,24 +74,24 @@
             <form method="post">
                 <div class="form-group">
                     <label class="form-label">Username</label>
-                    <input name="username" placeholder="Choose a unique identifier" required>
+                    <input name="username" placeholder="Choose your username" required>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Access Protocol (Password)</label>
-                    <input type="password" name="password" placeholder="Create a secure key" required>
+                    <label class="form-label">Password</label>
+                    <input type="password" name="password" placeholder="Create a password" required>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Contact Node (Phone Number)</label>
+                    <label class="form-label">Phone Number</label>
                     <input name="phone" placeholder="e.g. +91 98765 43210" required>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Account Classification</label>
+                    <label class="form-label">Account Type</label>
                     <select name="role" onchange="toggleFields(this.value)"
                         style="color: var(--accent); font-weight: 700;">
-                        <option value="student">Student Node</option>
+                        <option value="student">Student</option>
                     </select>
                 </div>
 
@@ -110,26 +110,25 @@
                             </select>
                         </div>
                         <div class="form-group" style="margin-bottom: 0;">
-                            <label class="form-label">Phase (Year)</label>
+                            <label class="form-label">Year</label>
                             <select name="year">
-                                <option value="1">Phase 1</option>
-                                <option value="2">Phase 2</option>
-                                <option value="3">Phase 3</option>
-                                <option value="4">Phase 4</option>
+                                <option value="1">1st Year</option>
+                                <option value="2">2nd Year</option>
+                                <option value="3">3rd Year</option>
+                                <option value="4">4th Year</option>
                             </select>
                         </div>
                     </div>
                 </div>
 
                 <button type="submit" class="submit-btn">
-                    <i class="fas fa-user-plus"></i> INITIALIZE NODE
+                    <i class="fas fa-user-plus"></i> CREATE ACCOUNT
                 </button>
             </form>
 
             <div style="text-align: center; margin-top: 30px; border-top: 1px solid var(--border); padding-top: 20px;">
-                <p style="color: var(--text-muted); font-size: 13px;">Already have an identity?
-                    <a href="/login" class="logout-link" style="display: inline; color: var(--accent);">Access
-                        Gateway</a>
+                <p style="color: var(--text-muted); font-size: 13px;">Already have an account?
+                    <a href="/login" class="logout-link" style="display: inline; color: var(--accent);">Login Here</a>
                 </p>
             </div>
         </div>
