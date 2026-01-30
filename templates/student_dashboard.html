@@ -20,10 +20,19 @@
                 </div>
                 <span style="font-weight: 800; letter-spacing: 1px;">INFOSTREAM</span>
             </div>
-            <a href="/logout" class="logout-link"
-                style="background: rgba(255, 68, 68, 0.1); padding: 8px 16px; border-radius: 12px; transition: 0.3s;">
-                <i class="fas fa-power-off"></i> TERMINATE
-            </a>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <button class="theme-toggle" id="theme-toggle" title="Toggle Dark/Light Mode">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <a href="/" class="logout-link"
+                    style="background: rgba(0, 242, 255, 0.1); color: var(--accent); padding: 8px 16px; border-radius: 12px; transition: 0.3s;">
+                    <i class="fas fa-home"></i> HOME
+                </a>
+                <a href="/logout" class="logout-link"
+                    style="background: rgba(255, 68, 68, 0.1); padding: 8px 16px; border-radius: 12px; transition: 0.3s;">
+                    <i class="fas fa-power-off"></i> TERMINATE
+                </a>
+            </div>
         </nav>
 
         <div style="display: grid; grid-template-columns: 300px 1fr; gap: 30px; margin-top: 30px; align-items: start;">
@@ -161,8 +170,13 @@
                     <p class="notification-content" style="margin: 20px 0; font-size: 15px;">{{ s.content or
                         s.description }}</p>
 
-                    <div class="notification-meta" style="padding-top: 15px; border-top: 1px solid var(--border);">
+                    <div class="notification-meta"
+                        style="padding-top: 15px; border-top: 1px solid var(--border); display: flex; gap: 20px; flex-wrap: wrap;">
                         <span><i class="far fa-clock"></i> {{ s.created_at }}</span>
+                        {% if s.posted_by %}
+                        <span style="color: var(--text-muted);"><i class="fas fa-user-edit"></i> POSTED BY: {{
+                            s.posted_by }}</span>
+                        {% endif %}
                         {% if s.type == 'placement' %}
                         <span style="color: #adff00;"><i class="fas fa-shield-alt"></i> ELIGIBILITY: {{ s.eligibility
                             }}</span>
@@ -186,6 +200,28 @@
     </div>
 
     <script>
+        function setTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+            const themeIcon = document.querySelector('#theme-toggle i');
+            if (themeIcon) {
+                themeIcon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const themeToggle = document.getElementById('theme-toggle');
+            if (themeToggle) {
+                themeToggle.addEventListener('click', () => {
+                    const currentTheme = document.documentElement.getAttribute('data-theme');
+                    setTheme(currentTheme === 'dark' ? 'light' : 'dark');
+                });
+            }
+
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            setTheme(savedTheme);
+        });
+
         let currentFilters = {
             type: 'all',
             category: 'all',

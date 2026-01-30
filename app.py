@@ -39,52 +39,12 @@ def init_db():
         )
     ''')
     
-    # Migration for missing columns
-    try:
-        cur.execute("ALTER TABLE users ADD COLUMN phone TEXT")
-    except sqlite3.OperationalError:
-        pass # Column already exists
-
-    cur.execute('''
-        CREATE TABLE IF NOT EXISTS notifications (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT NOT NULL,
-            content TEXT NOT NULL,
-            department TEXT,
-            year TEXT,
-            is_urgent INTEGER DEFAULT 0,
-            category TEXT,
-            created_at TEXT
-        )
-    ''')
-
-    cur.execute('''
-        CREATE TABLE IF NOT EXISTS placements (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            company TEXT NOT NULL,
-            role TEXT NOT NULL,
-            eligibility TEXT,
-            deadline TEXT,
-            description TEXT,
-            is_urgent INTEGER DEFAULT 0,
-            category TEXT DEFAULT 'Placement',
-            created_at TEXT
-        )
-    ''')
-
-    cur.execute('''
-        CREATE TABLE IF NOT EXISTS exams (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            exam_type TEXT NOT NULL,
-            title TEXT NOT NULL,
-            content TEXT,
-            department TEXT,
-            year TEXT,
-            is_urgent INTEGER DEFAULT 0,
-            category TEXT DEFAULT 'Exam Cell',
-            created_at TEXT
-        )
-    ''')
+    # Migration for poster tracking
+    for table in ['notifications', 'placements', 'exams']:
+        try:
+            cur.execute(f"ALTER TABLE {table} ADD COLUMN posted_by TEXT")
+        except sqlite3.OperationalError:
+            pass # Column already exists
 
     conn.commit()
     conn.close()
@@ -163,6 +123,7 @@ def login():
                 return render_template('login.html')
 
             session['user_id'] = user['id']
+            session['username'] = user['username']
             session['role'] = user['role']
             session['department'] = user['department']
             session['year'] = user['year']
@@ -197,9 +158,9 @@ def admin_dashboard():
         conn = get_db()
         cur = conn.cursor()
         cur.execute('''
-            INSERT INTO notifications (title, content, department, year, is_urgent, category, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        ''', (title, content, departments, years, is_urgent, category, datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
+            INSERT INTO notifications (title, content, department, year, is_urgent, category, created_at, posted_by)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (title, content, departments, years, is_urgent, category, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), session.get('username', 'System')))
         conn.commit()
         conn.close()
 
@@ -303,9 +264,9 @@ def admin_placement():
     conn = get_db()
     cur = conn.cursor()
     cur.execute('''
-        INSERT INTO placements (company, role, eligibility, deadline, description, is_urgent, category, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (company, role, eligibility, deadline, description, is_urgent, category, datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
+        INSERT INTO placements (company, role, eligibility, deadline, description, is_urgent, category, created_at, posted_by)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (company, role, eligibility, deadline, description, is_urgent, category, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), session.get('username', 'System')))
     conn.commit()
     conn.close()
 
@@ -328,9 +289,9 @@ def admin_exam():
     conn = get_db()
     cur = conn.cursor()
     cur.execute('''
-        INSERT INTO exams (exam_type, title, content, department, year, is_urgent, category, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (exam_type, title, content, departments, years, is_urgent, category, datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
+        INSERT INTO exams (exam_type, title, content, department, year, is_urgent, category, created_at, posted_by)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (exam_type, title, content, departments, years, is_urgent, category, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), session.get('username', 'System')))
     conn.commit()
     conn.close()
 
