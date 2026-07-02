@@ -1,3 +1,4 @@
+require('dotenv').config();
 const jwt = require('jsonwebtoken');
 
 const auth = (roles = []) => {
@@ -11,7 +12,7 @@ const auth = (roles = []) => {
         if (!token) return res.status(401).json({ message: 'Access Denied: No token provided' });
 
         try {
-            const verified = jwt.verify(token.replace('Bearer ', ''), process.env.JWT_SECRET || 'supersecretkey');
+            const verified = jwt.verify(token.replace('Bearer ', ''), process.env.JWT_SECRET);
             req.user = verified;
             
             if (roles.length && !roles.includes(req.user.role)) {
