@@ -11,6 +11,7 @@ client/build/
 .env
 client/.env
 server/.env
+server/seed.js
 
 # Python legacy files
 __pycache__/

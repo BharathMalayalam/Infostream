@@ -1,7 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import ThemeToggle from '../components/ThemeToggle';
+
+import useAuth from '../context/useAuth';
+
+/* ─── Inline Toast (replaces window.alert) ─── */
+function Toast({ message, type = 'success', onDismiss }) {
+  useEffect(() => {
+    const t = setTimeout(onDismiss, 4000);
+    return () => clearTimeout(t);
+  }, [onDismiss]);
+
+  return (
+    <div className={`inline-toast ${type}`}>
+      <i className={`fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}`}></i>
+      {message}
+      <button
+        onClick={onDismiss}
+        style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: 14, padding: 0 }}
+      >
+        <i className="fas fa-times"></i>
+      </button>
+    </div>
+  );
+}
 
 function StudentDashboard() {
   const [streams, setStreams] = useState([]);
@@ -9,271 +32,457 @@ function StudentDashboard() {
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState({ type: 'all', category: 'all', date: 'all' });
   const [urgentAlerts, setUrgentAlerts] = useState([]);
-  
-  const navigate = useNavigate();
-  const token = localStorage.getItem('token');
-  const role = localStorage.getItem('role');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [lastUrgentCheck, setLastUrgentCheck] = useState(new Date().toISOString());
+  const [toast, setToast] = useState(null);
+  const [activeTab, setActiveTab] = useState('streams-section'); // 'streams-section' or 'settings-section'
+  const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '' });
 
-  const fetchStreams = async () => {
+  const navigate = useNavigate();
+  const { logout, user } = useAuth();
+
+  const showToast = (message, type = 'success') => setToast({ message, type });
+  const dismissToast = () => setToast(null);
+
+  const handlePasswordChange = async (e) => {
+    e.preventDefault();
     try {
-      const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/auth/student`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/change-password`, passwordForm);
+      showToast('Password changed successfully!');
+      setPasswordForm({ currentPassword: '', newPassword: '' });
+      setActiveTab('streams-section');
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Failed to change password.', 'error');
+    }
+  };
+
+  /* ─── Data fetching ─── */
+  const fetchStreams = useCallback(async () => {
+    try {
+      const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/auth/student`);
       setStreams(res.data.streams);
       setFilteredStreams(res.data.streams);
     } catch (err) {
       if (err.response?.status === 401 || err.response?.status === 403) navigate('/login');
     }
+  }, [navigate]);
+
+  // Use a ref to always hold the latest poll function — avoids stale closure in setInterval
+  const pollRef = React.useRef(null);
+  pollRef.current = async () => {
+    try {
+      const res = await axios.get(
+        `${import.meta.env.VITE_API_URL}/api/auth/urgent_check?since=${encodeURIComponent(lastUrgentCheck)}`
+      );
+      if (res.data.urgent_alerts?.length > 0) {
+        setUrgentAlerts((prev) => [...prev, ...res.data.urgent_alerts]);
+        const maxTime = res.data.urgent_alerts.reduce(
+          (max, a) => (new Date(a.created_at) > new Date(max) ? a.created_at : max),
+          lastUrgentCheck
+        );
+        setLastUrgentCheck(maxTime);
+      }
+    } catch (err) {
+      console.warn('Urgent check failed:', err?.message || err);
+      // Silently ignore poll errors (network blip, session expired handled on fetch)
+    }
   };
 
   useEffect(() => {
     fetchStreams();
-    const interval = setInterval(pollUrgentAlerts, 10000);
-    if (Notification.permission !== "granted" && Notification.permission !== "denied") {
+    // Browser Notification permission request
+    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
       Notification.requestPermission();
     }
+    // Interval always calls the latest version of poll via ref — no stale closure
+    const interval = setInterval(() => pollRef.current?.(), 10000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchStreams]);
 
-  const [lastUrgentCheck, setLastUrgentCheck] = useState(new Date().toISOString());
-
-  const pollUrgentAlerts = async () => {
-    try {
-      const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/auth/urgent_check?since=${encodeURIComponent(lastUrgentCheck)}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (res.data.urgent_alerts && res.data.urgent_alerts.length > 0) {
-        setUrgentAlerts(prev => [...prev, ...res.data.urgent_alerts]);
-        const maxTime = res.data.urgent_alerts.reduce((max, a) => new Date(a.created_at) > new Date(max) ? a.created_at : max, lastUrgentCheck);
-        setLastUrgentCheck(maxTime);
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
+  /* ─── Filtering ─── */
   useEffect(() => {
-    applyFilters();
-  }, [search, filters, streams]);
-
-  const applyFilters = () => {
     const today = new Date().toISOString().split('T')[0];
-    const yesterdayDate = new Date();
-    yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-    const yesterday = yesterdayDate.toISOString().split('T')[0];
+    const y = new Date();
+    y.setDate(y.getDate() - 1);
+    const yesterday = y.toISOString().split('T')[0];
 
-    const filtered = streams.filter(s => {
-      const type = s.type;
-      const cat = s.category;
-      const dateStr = s.created_at.split('T')[0];
-      const text = (s.title || s.company || s.content || s.description || '').toLowerCase();
-
-      const matchesSearch = text.includes(search.toLowerCase());
-      const matchesType = filters.type === 'all' || type === filters.type;
-      const matchesCategory = filters.category === 'all' || cat === filters.category;
-
-      let matchesDate = true;
-      if (filters.date === 'today') matchesDate = dateStr === today;
-      if (filters.date === 'yesterday') matchesDate = dateStr === yesterday;
-
-      return matchesSearch && matchesType && matchesCategory && matchesDate;
-    });
-
-    setFilteredStreams(filtered);
-  };
+    setFilteredStreams(
+      streams.filter((s) => {
+        const text = (s.title || s.company || s.content || s.description || '').toLowerCase();
+        const dateStr = (s.created_at || '').split('T')[0];
+        const matchSearch = text.includes(search.toLowerCase());
+        const matchType = filters.type === 'all' || s.type === filters.type;
+        const matchCat = filters.category === 'all' || s.category === filters.category;
+        let matchDate = true;
+        if (filters.date === 'today') matchDate = dateStr === today;
+        if (filters.date === 'yesterday') matchDate = dateStr === yesterday;
+        return matchSearch && matchType && matchCat && matchDate;
+      })
+    );
+  }, [search, filters, streams]);
 
   const handleFilterChange = (key, value) => {
     if (key === 'type' && value === 'all') {
       setFilters({ type: 'all', category: 'all', date: 'all' });
     } else {
-      setFilters(prev => ({ ...prev, [key]: value }));
+      setFilters((prev) => ({ ...prev, [key]: value }));
     }
+    // Only close sidebar on mobile (< 768px) — desktop should not flicker/freeze
+    if (window.innerWidth < 768) setSidebarOpen(false);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('role');
+  const handleLogout = async () => {
+    await logout();
     navigate('/login');
   };
 
-  const hasUrgentVisible = filteredStreams.some(s => s.is_urgent === 1);
+  const closeSidebar = () => setSidebarOpen(false);
+  const hasUrgentVisible = filteredStreams.some((s) => s.is_urgent === 1);
+
+  /* ─── Helpers ─── */
+  const formatDate = (iso) => {
+    const d = new Date(iso);
+    return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  };
+
+  const activeFilterCount = [
+    filters.type !== 'all',
+    filters.category !== 'all',
+    filters.date !== 'all',
+  ].filter(Boolean).length;
 
   return (
-    <div className="container" style={{ maxWidth: '100%', padding: '0 40px' }}>
-      <nav className="dashboard-nav" style={{ background: 'var(--card-bg)', backdropFilter: 'var(--glass-blur)', padding: '20px 30px', borderRadius: '20px', border: '1px solid var(--border)', marginTop: '20px' }}>
-        <div className="nav-logo" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ width: '32px', height: '32px', background: 'rgba(0, 242, 255, 0.1)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--accent)' }}>
-            <i className="fas fa-signal" style={{ color: 'var(--accent)', fontSize: '14px' }}></i>
+    <div className="page-full">
+      {/* ── Navbar ── */}
+      <nav className="dashboard-nav">
+        <div className="nav-brand">
+          <button
+            className={`hamburger-btn ${sidebarOpen ? 'open' : ''}`}
+            onClick={() => setSidebarOpen((o) => !o)}
+            aria-label="Toggle sidebar"
+          >
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+          <div className="nav-brand-icon">
+            <i className="fas fa-signal"></i>
           </div>
-          <span style={{ fontWeight: '800', letterSpacing: '1px' }}>INFOSTREAM</span>
+          <span className="nav-brand-text">INFOSTREAM</span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+
+        <div className="nav-actions">
           <ThemeToggle />
-          <Link to="/" className="logout-link" style={{ background: 'rgba(0, 242, 255, 0.1)', color: 'var(--accent)', padding: '8px 16px', borderRadius: '12px', transition: '0.3s' }}>
-            <i className="fas fa-home"></i> HOME
+          <Link to="/" className="nav-btn nav-btn-home">
+            <i className="fas fa-home"></i>
+            <span>HOME</span>
           </Link>
-          <button onClick={handleLogout} className="logout-link" style={{ background: 'rgba(255, 68, 68, 0.1)', padding: '8px 16px', borderRadius: '12px', transition: '0.3s', border: 'none', color: '#ff4444', cursor: 'pointer', display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <i className="fas fa-power-off"></i> LOGOUT
+          <button onClick={handleLogout} className="nav-btn nav-btn-logout">
+            <i className="fas fa-power-off"></i>
+            <span>LOGOUT</span>
           </button>
         </div>
       </nav>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: '30px', marginTop: '30px', alignItems: 'start' }}>
-        <aside>
-          <div className="glass-card" style={{ padding: '25px', marginBottom: '25px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '25px' }}>
-              <div style={{ width: '48px', height: '48px', background: 'var(--accent)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#000' }}>
-                <i className="fas fa-user-graduate" style={{ fontSize: '20px' }}></i>
-              </div>
-              <div>
-                <div style={{ fontSize: '10px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>Logged In As</div>
-                <div style={{ fontWeight: '700', fontSize: '15px' }}>Student</div>
-              </div>
+      {/* ── Layout ── */}
+      <div className="dashboard-layout">
+        {/* Mobile overlay */}
+        <div
+          className={`sidebar-overlay ${sidebarOpen ? '' : 'hidden'}`}
+          onClick={closeSidebar}
+        />
+
+        {/* ── Sidebar ── */}
+        <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
+          {/* Profile */}
+          <div className="sidebar-profile">
+            <div className="profile-avatar">
+              <i className="fas fa-user-graduate"></i>
             </div>
-
-            <div style={{ borderTop: '1px solid var(--border)', paddingTop: '20px' }}>
-              <div className="form-group" style={{ marginBottom: '20px' }}>
-                <div style={{ position: 'relative' }}>
-                  <i className="fas fa-search" style={{ position: 'absolute', left: '15px', top: '15px', color: 'var(--text-muted)', fontSize: '12px' }}></i>
-                  <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search posts..." style={{ padding: '12px 15px 12px 42px', fontSize: '13px', margin: '0', background: 'var(--input-bg)', border: '1px solid var(--border)' }} />
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <button className={`nav-tab ${filters.type === 'all' && filters.category === 'all' && filters.date === 'all' ? 'active' : ''}`} onClick={() => handleFilterChange('type', 'all')} style={{ width: '100%', justifyContent: 'flex-start', background: filters.type === 'all' ? 'rgba(255, 255, 255, 0.05)' : 'transparent', border: '1px solid transparent', color: filters.type === 'all' ? '#fff' : 'var(--text-muted)', padding: '12px 15px' }}>
-                  <i className="fas fa-th-large" style={{ width: '20px' }}></i> ALL STREAMS
-                </button>
-
-                <div style={{ fontSize: '10px', fontWeight: '800', color: 'var(--text-muted)', margin: '15px 0 10px 15px', textTransform: 'uppercase' }}>Category</div>
-                <button className={`nav-tab ${filters.category === 'Exam Cell' ? 'active' : ''}`} onClick={() => handleFilterChange('category', 'Exam Cell')} style={{ width: '100%', justifyContent: 'flex-start', background: filters.category === 'Exam Cell' ? 'rgba(255, 255, 255, 0.05)' : 'transparent', color: filters.category === 'Exam Cell' ? '#fff' : 'var(--text-muted)', padding: '10px 15px', border: '1px solid transparent' }}>
-                  <i className="fas fa-file-invoice" style={{ width: '20px' }}></i> EXAM CELL
-                </button>
-                <button className={`nav-tab ${filters.category === 'Placement' ? 'active' : ''}`} onClick={() => handleFilterChange('category', 'Placement')} style={{ width: '100%', justifyContent: 'flex-start', background: filters.category === 'Placement' ? 'rgba(255, 255, 255, 0.05)' : 'transparent', color: filters.category === 'Placement' ? '#fff' : 'var(--text-muted)', padding: '10px 15px', border: '1px solid transparent' }}>
-                  <i className="fas fa-briefcase" style={{ width: '20px' }}></i> PLACEMENTS
-                </button>
-                <button className={`nav-tab ${filters.category === 'Events' ? 'active' : ''}`} onClick={() => handleFilterChange('category', 'Events')} style={{ width: '100%', justifyContent: 'flex-start', background: filters.category === 'Events' ? 'rgba(255, 255, 255, 0.05)' : 'transparent', color: filters.category === 'Events' ? '#fff' : 'var(--text-muted)', padding: '10px 15px', border: '1px solid transparent' }}>
-                  <i className="fas fa-calendar-alt" style={{ width: '20px' }}></i> EVENTS
-                </button>
-
-                <div style={{ fontSize: '10px', fontWeight: '800', color: 'var(--text-muted)', margin: '15px 0 10px 15px', textTransform: 'uppercase' }}>Timeline</div>
-                <button className={`nav-tab ${filters.date === 'today' ? 'active' : ''}`} onClick={() => handleFilterChange('date', 'today')} style={{ width: '100%', justifyContent: 'flex-start', background: filters.date === 'today' ? 'rgba(255, 255, 255, 0.05)' : 'transparent', color: filters.date === 'today' ? '#fff' : 'var(--text-muted)', padding: '10px 15px', border: '1px solid transparent' }}>
-                  <i className="fas fa-clock" style={{ width: '20px' }}></i> TODAY
-                </button>
-                <button className={`nav-tab ${filters.date === 'yesterday' ? 'active' : ''}`} onClick={() => handleFilterChange('date', 'yesterday')} style={{ width: '100%', justifyContent: 'flex-start', background: filters.date === 'yesterday' ? 'rgba(255, 255, 255, 0.05)' : 'transparent', color: filters.date === 'yesterday' ? '#fff' : 'var(--text-muted)', padding: '10px 15px', border: '1px solid transparent' }}>
-                  <i className="fas fa-history" style={{ width: '20px' }}></i> YESTERDAY
-                </button>
-              </div>
+            <div>
+              <div className="profile-info-label">Logged In As</div>
+              <div className="profile-info-value" style={{ textTransform: 'capitalize' }}>{user?.username}</div>
+              <div style={{ fontSize: 10, color: 'var(--accent-warn)', fontWeight: 700, letterSpacing: '0.5px' }}>STUDENT</div>
             </div>
           </div>
 
-          <div className="glass-card" style={{ padding: '20px', background: 'rgba(0, 242, 255, 0.03)' }}>
-            <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--accent)', marginBottom: '15px', textTransform: 'uppercase', letterSpacing: '1px' }}>System Status</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', color: 'var(--text-muted)' }}>
-              <div style={{ width: '8px', height: '8px', background: '#adff00', borderRadius: '50%', boxShadow: '0 0 8px #adff00' }}></div>
-              Operational & Encrypted
-            </div>
+          {/* Search */}
+          <div className="search-wrapper" style={{ marginBottom: 16 }}>
+            <i className="fas fa-search"></i>
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search posts..."
+            />
+          </div>
+
+          {/* Filter nav */}
+          <nav>
+            <button
+              className={`nav-tab ${filters.type === 'all' && filters.category === 'all' && filters.date === 'all' ? 'active' : ''}`}
+              onClick={() => handleFilterChange('type', 'all')}
+            >
+              <i className="fas fa-th-large"></i> ALL STREAMS
+              {activeFilterCount > 0 && (
+                <span className="badge badge-accent" style={{ marginLeft: 'auto', fontSize: 8 }}>
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
+
+            <div className="sidebar-section-label">Category</div>
+
+            {[
+              { label: 'EXAM CELL',   icon: 'fa-file-invoice', val: 'Exam Cell'  },
+              { label: 'PLACEMENTS',  icon: 'fa-briefcase',    val: 'Placement'  },
+              { label: 'EVENTS',      icon: 'fa-calendar-alt', val: 'Events'     },
+            ].map(({ label, icon, val }) => (
+              <button
+                key={val}
+                className={`nav-tab ${filters.category === val ? 'active' : ''}`}
+                onClick={() => handleFilterChange('category', val)}
+              >
+                <i className={`fas ${icon}`}></i> {label}
+              </button>
+            ))}
+
+            <div className="sidebar-section-label">Timeline</div>
+
+            {[
+              { label: 'TODAY',     icon: 'fa-clock',   val: 'today'     },
+              { label: 'YESTERDAY', icon: 'fa-history', val: 'yesterday' },
+            ].map(({ label, icon, val }) => (
+              <button
+                key={val}
+                className={`nav-tab ${filters.date === val ? 'active' : ''}`}
+                onClick={() => handleFilterChange('date', val)}
+              >
+                <i className={`fas ${icon}`}></i> {label}
+              </button>
+            ))}
+          </nav>
+
+          {/* Settings button */}
+          <div style={{ paddingTop: 8, borderTop: '1px solid var(--border)', marginTop: 8 }}>
+            <button
+              className={`nav-tab ${activeTab === 'settings-section' ? 'active' : ''}`}
+              onClick={() => { setActiveTab('settings-section'); setSidebarOpen(false); }}
+            >
+              <i className="fas fa-cog"></i> SETTINGS
+            </button>
+          </div>
+
+          {/* System status */}
+          <div className="system-status">
+            <div className="status-dot"></div>
+            <span className="status-text">Operational &amp; Encrypted</span>
           </div>
         </aside>
 
-        <main style={{ paddingBottom: '60px' }}>
+        {/* ── Main Content ── */}
+        <main className="dashboard-main">
+          {/* Toast */}
+          {toast && <Toast message={toast.message} type={toast.type} onDismiss={dismissToast} />}
+
+          {/* ── SETTINGS TAB ── */}
+          {activeTab === 'settings-section' && (
+            <div className="glass-card" style={{ padding: '32px', maxWidth: '480px', margin: '0 auto' }}>
+              <div className="section-header">
+                <div className="section-icon" style={{ background: 'var(--accent)' }}>
+                  <i className="fas fa-key" style={{ color: '#000' }}></i>
+                </div>
+                <h2 className="section-title">CHANGE PASSWORD</h2>
+              </div>
+              <p style={{ color: 'var(--text-muted)', fontSize: 12, marginBottom: 24 }}>
+                Logged in as <strong style={{ color: 'var(--accent)' }}>{user?.username}</strong>.
+                Choose a strong new password.
+              </p>
+              <form onSubmit={handlePasswordChange}>
+                <div className="form-group">
+                  <label className="form-label">Current Password</label>
+                  <div className="input-wrapper">
+                    <i className="fas fa-lock input-icon"></i>
+                    <input
+                      type="password"
+                      value={passwordForm.currentPassword}
+                      onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+                      placeholder="Enter current password"
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">New Password</label>
+                  <div className="input-wrapper">
+                    <i className="fas fa-lock-open input-icon"></i>
+                    <input
+                      type="password"
+                      value={passwordForm.newPassword}
+                      onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                      placeholder="Enter new password"
+                      required
+                    />
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+                  <button type="submit" className="submit-btn" style={{ flex: 1 }}>
+                    <i className="fas fa-shield-alt"></i> UPDATE PASSWORD
+                  </button>
+                  <button
+                    type="button"
+                    className="submit-btn"
+                    style={{ flex: '0 0 auto', background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-muted)', boxShadow: 'none', padding: '0 20px' }}
+                    onClick={() => setActiveTab('streams-section')}
+                  >
+                    CANCEL
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* ── STREAMS TAB ── */}
+          {activeTab === 'streams-section' && (
+            <>
+          {/* Critical alert banner */}
           {hasUrgentVisible && (
-            <div style={{ background: 'rgba(255, 77, 77, 0.1)', border: '1px solid rgba(255, 77, 77, 0.2)', padding: '20px', borderRadius: '16px', marginBottom: '25px', display: 'flex', alignItems: 'center', gap: '15px', animation: 'pulse 2s infinite' }}>
-              <div style={{ width: '40px', height: '40px', background: '#ff4d4d', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', boxShadow: '0 0 15px rgba(255, 77, 77, 0.4)' }}>
+            <div className="critical-alert-bar">
+              <div className="critical-alert-icon">
                 <i className="fas fa-exclamation-triangle"></i>
               </div>
               <div>
-                <div style={{ color: '#ff4d4d', fontWeight: '800', fontSize: '12px', letterSpacing: '1px' }}>CRITICAL BROADCAST DETECTED</div>
-                <div style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Immediate action/review required for urgent transmissions in your stream.</div>
+                <div className="critical-alert-title">CRITICAL BROADCAST DETECTED</div>
+                <div className="critical-alert-body">
+                  Immediate action/review required for urgent transmissions in your stream.
+                </div>
               </div>
             </div>
           )}
 
-          {urgentAlerts.map((alert, idx) => (
-            <div key={idx} className="glass-card" style={{ position: 'fixed', bottom: '30px', right: '30px', width: '350px', padding: '25px', background: 'rgba(20, 20, 20, 0.95)', border: '2px solid #ff4d4d', boxShadow: '0 10px 40px rgba(255, 77, 77, 0.3)', zIndex: 9999 }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '15px' }}>
-                <div style={{ width: '40px', height: '40px', background: '#ff4d4d', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexShrink: 0, boxShadow: '0 0 15px rgba(255, 77, 77, 0.4)' }}>
-                  <i className="fas fa-bolt"></i>
-                </div>
-                <div style={{ flexGrow: 1 }}>
-                  <div style={{ color: '#ff4d4d', fontWeight: '800', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '5px' }}>URGENT BROADCAST</div>
-                  <div style={{ color: '#fff', fontWeight: '700', fontSize: '15px', marginBottom: '5px' }}>{alert.title}</div>
-                  <div style={{ color: 'var(--text-muted)', fontSize: '12px', lineHeight: '1.4' }}>{alert.content}</div>
-                  <div style={{ marginTop: '15px', display: 'flex', gap: '10px' }}>
-                    <button onClick={() => window.location.reload()} style={{ background: 'var(--accent)', color: '#000', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '10px', fontWeight: '800', cursor: 'pointer' }}>REFRESH FEED</button>
-                    <button onClick={() => setUrgentAlerts(prev => prev.filter((_, i) => i !== idx))} style={{ background: 'transparent', color: 'var(--text-muted)', border: '1px solid var(--border)', padding: '6px 12px', borderRadius: '6px', fontSize: '10px', fontWeight: '800', cursor: 'pointer' }}>DISMISS</button>
-                  </div>
-                </div>
-              </div>
+          {/* Results count */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 600 }}>
+              <span style={{ color: 'var(--accent)', fontWeight: 800 }}>{filteredStreams.length}</span>
+              &nbsp;streams
             </div>
-          ))}
+          </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '15px' }}>
-            {filteredStreams.length > 0 ? filteredStreams.map((s, idx) => (
-              <div key={idx} className={`notification-card glass-card ${s.is_urgent ? 'urgent-card' : ''}`} style={{ padding: '18px', marginBottom: '0', position: 'relative', display: 'flex', flexDirection: 'column', minHeight: '280px', border: '1px solid var(--border)' }}>
-                {s.is_urgent === 1 && (
-                  <div className="urgent-bg" style={{ position: 'absolute', top: 0, right: 0, color: '#fff', fontSize: '8px', fontWeight: '900', padding: '4px 12px', borderBottomLeftRadius: '12px', letterSpacing: '1px' }}>
-                    <i className="fas fa-bolt"></i> PRIORITY TRANSMISSION
-                  </div>
-                )}
-                <div className="notification-header" style={{ marginBottom: '12px', display: 'block' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                    <span className="category-badge" style={{ background: 'rgba(0, 242, 255, 0.1)', color: 'var(--accent)', fontSize: '8px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '1px', padding: '2px 8px', borderRadius: '4px', border: '1px solid rgba(0, 242, 255, 0.2)' }}>
-                      {s.category || s.type.toUpperCase()}
-                    </span>
-                    <span className="badge" style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)', border: '1px solid var(--border)', fontSize: '8px', padding: '2px 6px' }}>
-                      {!s.department ? 'GLOBAL' : 'TARGET'}
-                    </span>
-                  </div>
-                  <h3 className={`notification-title ${s.is_urgent ? 'urgent-title' : ''}`} style={{ marginTop: '4px', fontSize: '14px', fontWeight: '800', color: 'var(--text-primary)', lineHeight: '1.3', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-                    {s.title || s.company}
-                  </h3>
-                  {s.department && (
-                    <div style={{ fontSize: '8px', color: 'var(--accent)', fontWeight: '700', opacity: '0.8', marginTop: '4px' }}>
-                      <i className="fas fa-users" style={{ marginRight: '3px' }}></i> {s.department} | {s.year}
+          {/* Stream grid */}
+          <div className="stream-grid">
+            {filteredStreams.length > 0 ? (
+              filteredStreams.map((s, idx) => (
+                <div
+                  key={s._id || idx}
+                  className={`notification-card glass-card ${s.is_urgent ? 'urgent-card' : ''}`}
+                  style={{ padding: 18, marginBottom: 0 }}
+                >
+                  {/* Urgent badge */}
+                  {s.is_urgent === 1 && (
+                    <div className="urgent-banner">
+                      <i className="fas fa-bolt"></i> PRIORITY
                     </div>
                   )}
-                </div>
 
-                {s.type === 'placement' && (
-                  <div className="details-mini-grid" style={{ display: 'flex', flexDirection: 'column', gap: '6px', margin: '10px 0', background: 'rgba(255,255,255,0.03)', padding: '8px', borderRadius: '8px', border: '1px solid var(--border)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '8px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Role</span>
-                      <span style={{ fontSize: '10px', fontWeight: '700', color: 'var(--text-primary)' }}>{s.role}</span>
+                  {/* Header */}
+                  <div className="notification-header">
+                    <div className="notification-header-row">
+                      <span className="badge badge-accent">
+                        {s.category || s.type?.toUpperCase()}
+                      </span>
+                      <span className="badge badge-neutral">
+                        {!s.department ? 'GLOBAL' : 'TARGET'}
+                      </span>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '8px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Due</span>
-                      <span style={{ fontSize: '10px', fontWeight: '700', color: '#ffbc00' }}>{s.deadline}</span>
+                    <h3 className={`notification-title ${s.is_urgent ? 'urgent-title' : ''}`}>
+                      {s.title || s.company}
+                    </h3>
+                    {s.department && (
+                      <div style={{ fontSize: 9, color: 'var(--accent)', fontWeight: 700, opacity: 0.85 }}>
+                        <i className="fas fa-users" style={{ marginRight: 4 }}></i>
+                        {s.department} &nbsp;|&nbsp; Year {s.year}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Placement details */}
+                  {s.type === 'placement' && (
+                    <div className="details-mini-grid">
+                      <div className="detail-row">
+                        <span className="detail-label">Role</span>
+                        <span className="detail-value">{s.role}</span>
+                      </div>
+                      <div className="detail-row">
+                        <span className="detail-label">Due</span>
+                        <span className="detail-value" style={{ color: 'var(--accent-warn)' }}>{s.deadline}</span>
+                      </div>
                     </div>
-                  </div>
-                )}
-                {s.type === 'exam' && (
-                  <div className="details-mini-grid" style={{ margin: '10px 0', background: 'rgba(255,188,0,0.05)', padding: '8px', borderRadius: '8px', border: '1px solid rgba(255,188,0,0.1)' }}>
-                    <div style={{ fontSize: '8px', fontWeight: '800', color: '#ffbc00', textTransform: 'uppercase', marginBottom: '2px' }}>Type</div>
-                    <div style={{ fontSize: '10px', fontWeight: '700', color: 'var(--text-primary)' }}>{s.exam_type}</div>
-                  </div>
-                )}
+                  )}
 
-                <div className="notification-content" style={{ margin: '8px 0', fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.5', whiteSpace: 'pre-wrap', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical', flexGrow: 1 }}>
-                  {s.content || s.description}
-                </div>
+                  {/* Exam details */}
+                  {s.type === 'exam' && (
+                    <div className="details-mini-grid" style={{ background: 'rgba(255,188,0,0.04)', borderColor: 'rgba(255,188,0,0.12)' }}>
+                      <div className="detail-row">
+                        <span className="detail-label">Type</span>
+                        <span className="detail-value" style={{ color: 'var(--accent-warn)' }}>{s.exam_type}</span>
+                      </div>
+                    </div>
+                  )}
 
-                <div className="notification-meta" style={{ paddingTop: '10px', borderTop: '1px solid var(--border)', marginTop: 'auto' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ color: 'var(--text-muted)', fontSize: '9px' }}><i className="far fa-clock"></i> {s.created_at.split('T')[0]}</span>
-                    {s.posted_by && <span style={{ color: 'var(--accent)', fontWeight: '700', fontSize: '9px' }}><i className="fas fa-user-circle"></i> {s.posted_by}</span>}
+                  {/* Content */}
+                  <p className="notification-content">
+                    {s.content || s.description}
+                  </p>
+
+                  {/* Meta */}
+                  <div className="notification-meta">
+                    <span>
+                      <i className="far fa-clock" style={{ marginRight: 4 }}></i>
+                      {formatDate(s.created_at)}
+                    </span>
+                    {s.posted_by && (
+                      <span style={{ color: 'var(--accent)', fontWeight: 700 }}>
+                        <i className="fas fa-user-circle" style={{ marginRight: 4 }}></i>
+                        {s.posted_by}
+                      </span>
+                    )}
                   </div>
                 </div>
-              </div>
-            )) : (
-              <div className="glass-card" style={{ textAlign: 'center', padding: '100px 40px', gridColumn: '1 / -1' }}>
-                <i className="fas fa-satellite-dish" style={{ fontSize: '32px', color: 'var(--text-muted)', marginBottom: '20px' }}></i>
-                <h3 style={{ fontSize: '18px', fontWeight: '700' }}>End of Stream</h3>
-                <p style={{ color: 'var(--text-muted)' }}>No active transmissions detected.</p>
+              ))
+            ) : (
+              <div className="empty-state glass-card">
+                <i className="fas fa-satellite-dish"></i>
+                <h3>No Active Transmissions</h3>
+                <p>No streams match your current filters.</p>
               </div>
             )}
           </div>
+          </>
+          )}
         </main>
       </div>
+
+      {/* ── Urgent Toast Popups ── */}
+      {urgentAlerts.map((alert, idx) => (
+        <div key={idx} className="urgent-toast">
+          <div className="toast-header">
+            <i className="fas fa-bolt"></i> URGENT BROADCAST
+          </div>
+          <div className="toast-title">{alert.title}</div>
+          <div className="toast-body">{alert.content}</div>
+          <div className="toast-actions">
+            <button className="toast-btn toast-btn-primary" onClick={() => window.location.reload()}>
+              REFRESH FEED
+            </button>
+            <button
+              className="toast-btn toast-btn-secondary"
+              onClick={() => setUrgentAlerts((prev) => prev.filter((_, i) => i !== idx))}
+            >
+              DISMISS
+            </button>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

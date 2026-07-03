@@ -1,27 +1,39 @@
-require('dotenv').config();
 const jwt = require('jsonwebtoken');
 
+/**
+ * Auth middleware — reads JWT from HTTP-only cookie (not Authorization header).
+ * @param {string|string[]} roles - allowed roles e.g. 'admin' or ['admin', 'staff']
+ */
 const auth = (roles = []) => {
-    // roles param can be a single role string (e.g. 'admin') or an array of roles (e.g. ['admin', 'staff'])
-    if (typeof roles === 'string') {
-        roles = [roles];
-    }
+    if (typeof roles === 'string') roles = [roles];
 
     return (req, res, next) => {
-        const token = req.header('Authorization');
-        if (!token) return res.status(401).json({ message: 'Access Denied: No token provided' });
+        // Read token from HTTP-only cookie set at login
+        const token = req.cookies?.token;
+
+        if (!token) {
+            return res.status(401).json({ message: 'Access denied: not authenticated.' });
+        }
 
         try {
-            const verified = jwt.verify(token.replace('Bearer ', ''), process.env.JWT_SECRET);
+            const verified = jwt.verify(token, process.env.JWT_SECRET);
             req.user = verified;
-            
+
+            // Check role if restrictions specified
             if (roles.length && !roles.includes(req.user.role)) {
-                return res.status(403).json({ message: 'Unauthorized access' });
+                return res.status(403).json({ message: 'Forbidden: insufficient permissions.' });
             }
-            
+
             next();
         } catch (err) {
-            res.status(400).json({ message: 'Invalid token' });
+            // Token expired or tampered
+            res.clearCookie('token', {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'none',
+                path: '/',
+            });
+            return res.status(401).json({ message: 'Session expired. Please log in again.' });
         }
     };
 };

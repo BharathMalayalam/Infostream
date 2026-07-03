@@ -1,4 +1,11 @@
 require('dotenv').config();
+
+// Override DNS to use Google's public DNS — fixes SRV lookup failures
+// on ISP/router DNS servers that don't support SRV record queries
+const dns = require('dns');
+dns.setDefaultResultOrder('ipv4first');
+dns.setServers(['8.8.8.8', '8.8.4.4', '1.1.1.1']);
+
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const User = require('./models/User');
