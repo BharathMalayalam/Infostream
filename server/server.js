@@ -13,9 +13,29 @@ const cookieParser = require('cookie-parser');
 
 const app = express();
 
-// CORS — allow credentials (cookies) from the client
+// CORS — allow credentials (cookies) from the client with robust origin matching
+const allowedOrigins = [
+    (process.env.CLIENT_URL || '').replace(/\/$/, '').toLowerCase(),
+    `https://${(process.env.CLIENT_URL || '').replace(/^https?:\/\//i, '').replace(/\/$/, '').toLowerCase()}`,
+    'https://infostream-xi.vercel.app',
+    'http://localhost:5173'
+].filter(Boolean);
+
 app.use(cors({
-    origin: process.env.CLIENT_URL,
+    origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps, curl, postman)
+        if (!origin) return callback(null, true);
+        
+        const normOrigin = origin.replace(/\/$/, '').toLowerCase();
+        const isAllowed = allowedOrigins.includes(normOrigin);
+        
+        if (isAllowed) {
+            callback(null, true);
+        } else {
+            console.warn(`Blocked by CORS: ${origin}. Allowed origins:`, allowedOrigins);
+            callback(null, false); // Block but don't crash node app
+        }
+    },
     credentials: true,          // required for cookies to be sent cross-origin
 }));
 
