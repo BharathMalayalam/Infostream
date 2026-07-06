@@ -329,14 +329,6 @@ function StudentDashboard() {
                   <button type="submit" className="submit-btn" style={{ flex: 1 }}>
                     <i className="fas fa-shield-alt"></i> UPDATE PASSWORD
                   </button>
-                  <button
-                    type="button"
-                    className="submit-btn"
-                    style={{ flex: '0 0 auto', background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-muted)', boxShadow: 'none', padding: '0 20px' }}
-                    onClick={() => setActiveTab('streams-section')}
-                  >
-                    CANCEL
-                  </button>
                 </div>
               </form>
             </div>
