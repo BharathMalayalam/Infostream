@@ -5,7 +5,8 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import AdminDashboard from './pages/AdminDashboard';
 import StudentDashboard from './pages/StudentDashboard';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthProvider } from './context/AuthContext.jsx';
+import useAuth from './context/useAuth.js';
 
 function getCookie(name) {
   const value = `; ${document.cookie}`;

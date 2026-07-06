@@ -16,7 +16,9 @@ export function AuthProvider({ children }) {
         }
       })
       .catch((err) => {
-        console.warn('Auth verify failed:', err?.message || err);
+        if (err?.response?.status !== 401) {
+          console.warn('Auth verify failed:', err?.message || err);
+        }
         setUser(null);
       })
       .finally(() => setLoading(false));

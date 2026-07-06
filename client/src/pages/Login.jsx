@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import axios from 'axios';
+import axios from '../api/axios.js';
 import ThemeToggle from '../components/ThemeToggle';
 import useAuth from '../context/useAuth';
 

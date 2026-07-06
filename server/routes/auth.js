@@ -4,10 +4,12 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
+const isProduction = process.env.NODE_ENV === 'production';
+
 const COOKIE_OPTIONS = {
     httpOnly: true,          // not accessible via JS — prevents XSS token theft
-    secure: process.env.NODE_ENV === 'production', // HTTPS-only in production
-    sameSite: 'none',
+    secure: isProduction,    // HTTPS-only in production
+    sameSite: isProduction ? 'none' : 'lax', // 'none' requires secure=true (HTTPS)
     path: '/',
     maxAge: 24 * 60 * 60 * 1000, // 24 hours in ms
 };
@@ -95,8 +97,8 @@ router.post('/logout', (req, res) => {
     // Clear the HTTP-only cookie by overwriting with an expired one
     res.clearCookie('token', {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'none',
+        secure: isProduction,
+        sameSite: isProduction ? 'none' : 'lax',
         path: '/',
     });
     res.json({ message: 'Logged out successfully.' });

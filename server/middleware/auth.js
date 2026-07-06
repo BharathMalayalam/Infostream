@@ -27,10 +27,11 @@ const auth = (roles = []) => {
             next();
         } catch (err) {
             // Token expired or tampered
+            const isProd = process.env.NODE_ENV === 'production';
             res.clearCookie('token', {
                 httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'none',
+                secure: isProd,
+                sameSite: isProd ? 'none' : 'lax',
                 path: '/',
             });
             return res.status(401).json({ message: 'Session expired. Please log in again.' });

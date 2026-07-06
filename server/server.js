@@ -23,9 +23,13 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());        // parse cookies from incoming requests
 
-mongoose.connect(process.env.MONGODB_URI)
+mongoose.connect(process.env.MONGODB_URI, {
+    family: 4,               // force IPv4 — prevents Atlas rejection of IPv6-mapped addresses
+    serverSelectionTimeoutMS: 10000,
+    socketTimeoutMS: 45000,
+})
     .then(() => console.log('MongoDB Connected'))
-    .catch(err => console.log(err));
+    .catch(err => console.error('MongoDB connection error:', err.message));
 
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api',      require('./routes/api'));
